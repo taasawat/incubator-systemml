@@ -24,11 +24,12 @@ import org.apache.sysml.runtime.DMLRuntimeException;
 import org.apache.sysml.runtime.controlprogram.context.ExecutionContext;
 import org.apache.sysml.runtime.instructions.GPUInstructionParser;
 import org.apache.sysml.runtime.instructions.Instruction;
+import org.apache.sysml.runtime.instructions.cp.CPOperand;
 import org.apache.sysml.runtime.matrix.operators.Operator;
 
 public abstract class GPUInstruction extends Instruction 
 {
-	public enum GPUINSTRUCTION_TYPE { AggregateBinary, Convolution }; 
+	public enum GPUINSTRUCTION_TYPE { AggregateBinary, Convolution, MMTSJ}; 
 	
 	protected GPUINSTRUCTION_TYPE _gputype;
 	protected Operator _optr;
@@ -49,6 +50,12 @@ public abstract class GPUInstruction extends Instruction
 		_optr = op;
 	}
 	
+	public GPUInstruction(Operator op, CPOperand in1, CPOperand out,
+			String opcode, String istr) {
+		this(opcode, istr);
+		_optr = op;
+	}
+
 	public GPUINSTRUCTION_TYPE getGPUInstructionType() {
 		return _gputype;
 	}

@@ -554,9 +554,13 @@ public class AggBinaryOp extends Hop implements MultiThreadedHop
 	private void constructCPLopsTSMM( MMTSJType mmtsj ) 
 		throws HopsException, LopsException
 	{
+		ExecType et = ExecType.CP;
+        if(DMLScript.USE_ACCELERATOR && (DMLScript.FORCE_ACCELERATOR || getMemEstimate() < OptimizerUtils.GPU_MEMORY_BUDGET)) {
+                et = ExecType.GPU;
+        }
 		int k = OptimizerUtils.getConstrainedNumThreads(_maxNumThreads);
 		Lop matmultCP = new MMTSJ(getInput().get(mmtsj.isLeft()?1:0).constructLops(),
-				                 getDataType(), getValueType(), ExecType.CP, mmtsj, k);
+				                 getDataType(), getValueType(), et, mmtsj, k);
 	
 		matmultCP.getOutputParameters().setDimensions(getDim1(), getDim2(), getRowsInBlock(), getColsInBlock(), getNnz());
 		setLineNumbers( matmultCP );

@@ -94,7 +94,7 @@ public abstract class AutomatedTestBase
 	public static final boolean EXCEPTION_NOT_EXPECTED = false;
 	
 	// By default: TEST_GPU is set to false to allow developers without Nvidia GPU to run integration test suite 
-	public static final boolean TEST_GPU = false;
+	public static final boolean TEST_GPU = true;
 	
 	protected ScriptType scriptType;
 	
@@ -141,6 +141,14 @@ public abstract class AutomatedTestBase
 				//e.printStackTrace();
 				//System.err.printf("Caught exception while attempting to override library path. Attempting to continue.");
 			}
+		}
+		else {
+            if(TEST_GPU) {
+                    //String CUDA_LIBRARY_PATH = System.getenv("CUDA_PATH") + File.separator + "lib64"; 
+                    //System.out.println("CUDA libraries should be available at " + CUDA_LIBRARY_PATH);
+                    System.out.println(System.getenv("LD_LIBRARY_PATH"));
+                    //System.setProperty("java.library.path", CUDA_LIBRARY_PATH);
+            }
 		}
 	}
 	// *** END HACK ***
