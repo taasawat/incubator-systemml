@@ -25,9 +25,7 @@ import org.apache.sysml.runtime.controlprogram.caching.MatrixObject;
 import org.apache.sysml.runtime.controlprogram.context.ExecutionContext;
 import org.apache.sysml.runtime.instructions.InstructionUtils;
 import org.apache.sysml.runtime.instructions.cp.CPOperand;
-import org.apache.sysml.runtime.instructions.cp.UnaryCPInstruction;
 import org.apache.sysml.runtime.matrix.data.LibMatrixCUDA;
-import org.apache.sysml.runtime.matrix.data.MatrixBlock;
 import org.apache.sysml.runtime.matrix.operators.Operator;
 import org.apache.sysml.utils.Statistics;
 
@@ -39,12 +37,17 @@ public class MMTSJGPUInstruction extends GPUInstruction
 {
 
         private MMTSJType _type = null;
+        
+        CPOperand _input;
+        CPOperand _output;
 
         public MMTSJGPUInstruction(Operator op, CPOperand in1, MMTSJType type, CPOperand out,  String opcode, String istr)
         {
-                super(op, in1, out, opcode, istr);
-                _cptype = CPINSTRUCTION_TYPE.MMTSJ;
+                super(op, opcode, istr);
+                _gputype = GPUINSTRUCTION_TYPE.MMTSJ;
                 _type = type;
+                _input = in1;
+                _output = out;
         }
 
         /**
@@ -78,7 +81,7 @@ public class MMTSJGPUInstruction extends GPUInstruction
                 Statistics.incrementNoOfExecutedGPUInst();
 
                 //get inputs
-                MatrixObject mat = ec.getMatrixInputForGPUInstruction(input1.getName());
+                MatrixObject mat = ec.getMatrixInputForGPUInstruction(_input.getName());
                
                 boolean isLeftTransposed = ( _type == MMTSJType.LEFT);
 
@@ -86,14 +89,14 @@ public class MMTSJGPUInstruction extends GPUInstruction
                 int clen = rlen;
 
                 //execute operations 
-                ec.setMetaData(output.getName(), rlen, clen);
-                MatrixObject out = ec.getMatrixOutputForGPUInstruction(output.getName(), false);
+                ec.setMetaData(_output.getName(), rlen, clen);
+                MatrixObject out = ec.getMatrixOutputForGPUInstruction(_output.getName(), false);
                 LibMatrixCUDA.matmultTSMM(mat, out, isLeftTransposed, !isLeftTransposed);
           //      LibMatrixCUDA.matmult(mat, mat, out, isLeftTransposed, !isLeftTransposed);
                 //set output and release inputs
 
-                ec.releaseMatrixInputForGPUInstruction(input1.getName());
-                ec.releaseMatrixOutputForGPUInstruction(output.getName());
+                ec.releaseMatrixInputForGPUInstruction(_input.getName());
+                ec.releaseMatrixOutputForGPUInstruction(_output.getName());
         }
 
         public MMTSJType getMMTSJType()
