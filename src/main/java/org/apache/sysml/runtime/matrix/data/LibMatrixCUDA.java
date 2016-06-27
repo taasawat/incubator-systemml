@@ -52,6 +52,7 @@ import jcuda.jcudnn.cudnnTensorDescriptor;
 import org.apache.sysml.runtime.DMLRuntimeException;
 import org.apache.sysml.runtime.controlprogram.caching.MatrixObject;
 import org.apache.sysml.runtime.instructions.gpu.context.JCudaObject;
+import org.apache.sysml.utils.Statistics;
 
 //FIXME move could to respective instructions, this is not a block library
 public class LibMatrixCUDA {
@@ -285,7 +286,6 @@ public class LibMatrixCUDA {
 	    JCublas.cublasDsyrk('U',transa, m, k, alpha, A, lda, beta, C, ldc);
 	    JCublas.cublasDsyrk('L',transa, m, k, alpha, A, lda, beta, C, ldc);
 	
-	    Statistics.cudaMultTime.addAndGet(System.nanoTime()-start);
 	}
 
 	

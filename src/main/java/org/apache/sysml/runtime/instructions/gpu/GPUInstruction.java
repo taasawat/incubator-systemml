@@ -50,11 +50,6 @@ public abstract class GPUInstruction extends Instruction
 		_optr = op;
 	}
 	
-	public GPUInstruction(Operator op, CPOperand in1, CPOperand out,
-			String opcode, String istr) {
-		this(opcode, istr);
-		_optr = op;
-	}
 
 	public GPUINSTRUCTION_TYPE getGPUInstructionType() {
 		return _gputype;
