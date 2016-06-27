@@ -40,7 +40,9 @@ import static jcuda.jcudnn.cudnnTensorFormat.CUDNN_TENSOR_NCHW;
 import jcuda.jcudnn.cudnnConvolutionFwdPreference;
 import static jcuda.runtime.JCuda.cudaFree;
 import jcuda.Pointer;
+import jcuda.Sizeof;
 import jcuda.jcublas.JCublas;
+import jcuda.jcublas.JCublas2;
 import jcuda.jcublas.cublasHandle;
 import jcuda.jcudnn.cudnnConvolutionDescriptor;
 import jcuda.jcudnn.cudnnFilterDescriptor;
@@ -240,6 +242,53 @@ public class LibMatrixCUDA {
 		
 	}
 
+	public static void matmultTSMM(MatrixObject left, MatrixObject output,
+            boolean isLeftTransposed, boolean isRightTransposed1) throws DMLRuntimeException {
+	    if(isInSparseFormat(left)) {
+	            throw new DMLRuntimeException("Sparse GPU TSMM is not implemented");
+	    }
+	
+	    // Since CuBLAS expects inputs in column-major format,
+	    // reverse the order of matrix-multiplication and take care of dimension mismatch.      
+	    char transa = isLeftTransposed ? 'N' : 'T';
+	    // Note: the dimensions are swapped
+	    int m = (int) (isLeftTransposed ? left.getNumColumns() : left.getNumRows());
+	    int k = (int) (isLeftTransposed ? left.getNumRows() : left.getNumColumns());
+	
+	    if(m == -1)
+	            throw new DMLRuntimeException("Incorrect dimensions");
+	
+	    double alpha = 1.0d;
+	    double beta = 0.0d;
+	
+	    int lda = (int) (isLeftTransposed ? m : k);
+	    int ldc = m;
+	
+	    if(!left.getGPUObject().isAllocated)
+	            throw new DMLRuntimeException("Input is not allocated:" + left.getGPUObject().isAllocated);
+	    if(!output.getGPUObject().isAllocated)
+	            throw new DMLRuntimeException("Output is not allocated:" + output.getGPUObject().isAllocated);
+	
+	    Pointer A = ((JCudaObject)left.getGPUObject()).jcudaPointer;
+	    Pointer C = ((JCudaObject)output.getGPUObject()).jcudaPointer;
+	    
+	
+	    long start = System.nanoTime();
+	
+	    /*
+	    JCublas.cublasDsyrk('L',transa, m, k, alpha, A, lda, beta, C, ldc);
+	    ((JCudaObject)output.getGPUObject()).copyFromDeviceToHost();
+	    LibMatrixMult.copyUpperToLowerTriangle(output.getMatrixBlock());
+	    ((JCudaObject)output.getGPUObject()).copyFromHostToDevice();
+	    */
+	
+	    JCublas.cublasDsyrk('U',transa, m, k, alpha, A, lda, beta, C, ldc);
+	    JCublas.cublasDsyrk('L',transa, m, k, alpha, A, lda, beta, C, ldc);
+	
+	    Statistics.cudaMultTime.addAndGet(System.nanoTime()-start);
+	}
+
+	
 	public static void matmult(MatrixObject left1, MatrixObject right1, MatrixObject output, 
 			boolean isLeftTransposed1, boolean isRightTransposed1) throws DMLRuntimeException {
 		if(isInSparseFormat(left1) || isInSparseFormat(right1)) {

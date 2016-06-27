@@ -3935,7 +3935,7 @@ public class LibMatrixMult
 	 * 
 	 * @param ret
 	 */
-	private static void copyUpperToLowerTriangle( MatrixBlock ret )
+	public static void copyUpperToLowerTriangle( MatrixBlock ret )
 	{
 		double[] c = ret.denseBlock;
 		final int m = ret.rlen;
