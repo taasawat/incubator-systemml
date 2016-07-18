@@ -116,7 +116,7 @@ public class ConvolutionOp extends Hop  implements MultiThreadedHop
 			{	
 				et = ExecType.CP; // TODO: Since max_backwards and other Convolution Ops only implemented for CP
 				
-				if( et == ExecType.CP  )
+				if( et == ExecType.CP )
 				{
 					setLops(constructConvolutionLops(et, inputs));
 					break;
