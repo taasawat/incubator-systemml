@@ -21,6 +21,7 @@ package org.apache.sysml.hops;
 
 import java.util.ArrayList;
 
+import org.apache.sysml.api.DMLScript;
 import org.apache.sysml.conf.ConfigurationManager;
 import org.apache.sysml.hops.Hop.MultiThreadedHop;
 import org.apache.sysml.lops.ConvolutionTransform;
@@ -114,10 +115,18 @@ public class ConvolutionOp extends Hop  implements MultiThreadedHop
 			case MAX_POOLING:
 			case MAX_POOLING_BACKWARD:
 			{	
-				et = ExecType.CP; // TODO: Since max_backwards and other Convolution Ops only implemented for CP
+			//	et = ExecType.CP; // TODO: Since max_backwards and other Convolution Ops only implemented for CP
 				
-				if( et == ExecType.CP )
+				if( et == ExecType.CP || et == ExecType.GPU )
 				{
+					System.out.println("getMemEstimate -> " + getMemEstimate() + " GPU_Mem_Budget -> " + OptimizerUtils.GPU_MEMORY_BUDGET);
+					if (DMLScript.FORCE_ACCELERATOR || (DMLScript.USE_ACCELERATOR && getMemEstimate() < OptimizerUtils.GPU_MEMORY_BUDGET))
+					{
+						et = ExecType.GPU;
+					}
+					else {
+						et = ExecType.CP;
+					}
 					setLops(constructConvolutionLops(et, inputs));
 					break;
 				}

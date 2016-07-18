@@ -22,22 +22,32 @@ package org.apache.sysml.runtime.matrix.data;
 import static jcuda.jcudnn.JCudnn.cudnnConvolutionBackwardData;
 import static jcuda.jcudnn.JCudnn.cudnnConvolutionBackwardFilter;
 import static jcuda.jcudnn.JCudnn.cudnnConvolutionForward;
+import static jcuda.jcudnn.JCudnn.cudnnPoolingForward;
+import static jcuda.jcudnn.JCudnn.cudnnPoolingBackward;
+import static jcuda.jcudnn.JCudnn.cudnnActivationForward;
+import static jcuda.jcudnn.JCudnn.cudnnActivationBackward;
 import static jcuda.jcudnn.JCudnn.cudnnCreateConvolutionDescriptor;
 import static jcuda.jcudnn.JCudnn.cudnnCreateFilterDescriptor;
 import static jcuda.jcudnn.JCudnn.cudnnCreateTensorDescriptor;
+import static jcuda.jcudnn.JCudnn.cudnnCreatePoolingDescriptor;
 import static jcuda.jcudnn.JCudnn.cudnnDestroyConvolutionDescriptor;
 import static jcuda.jcudnn.JCudnn.cudnnDestroyFilterDescriptor;
 import static jcuda.jcudnn.JCudnn.cudnnDestroyTensorDescriptor;
+import static jcuda.jcudnn.JCudnn.cudnnDestroyPoolingDescriptor;
 import static jcuda.jcudnn.JCudnn.cudnnGetConvolutionBackwardDataWorkspaceSize;
 import static jcuda.jcudnn.JCudnn.cudnnGetConvolutionBackwardFilterWorkspaceSize;
 import static jcuda.jcudnn.JCudnn.cudnnGetConvolutionForwardWorkspaceSize;
 import static jcuda.jcudnn.JCudnn.cudnnSetConvolution2dDescriptor;
 import static jcuda.jcudnn.JCudnn.cudnnSetFilter4dDescriptor;
 import static jcuda.jcudnn.JCudnn.cudnnSetTensor4dDescriptor;
+import static jcuda.jcudnn.JCudnn.cudnnSetPooling2dDescriptor;
 import static jcuda.jcudnn.cudnnConvolutionMode.CUDNN_CROSS_CORRELATION;
+import static jcuda.jcudnn.cudnnPoolingMode.CUDNN_POOLING_MAX;
+import static jcuda.jcudnn.cudnnActivationMode.CUDNN_ACTIVATION_RELU;
 import static jcuda.jcudnn.cudnnDataType.CUDNN_DATA_DOUBLE;
 import static jcuda.jcudnn.cudnnTensorFormat.CUDNN_TENSOR_NCHW;
 import jcuda.jcudnn.cudnnConvolutionFwdPreference;
+import static jcuda.runtime.JCuda.cudaMalloc;
 import static jcuda.runtime.JCuda.cudaFree;
 import jcuda.Pointer;
 import jcuda.Sizeof;
@@ -47,6 +57,7 @@ import jcuda.jcublas.cublasHandle;
 import jcuda.jcudnn.cudnnConvolutionDescriptor;
 import jcuda.jcudnn.cudnnFilterDescriptor;
 import jcuda.jcudnn.cudnnHandle;
+import jcuda.jcudnn.cudnnPoolingDescriptor;
 import jcuda.jcudnn.cudnnTensorDescriptor;
 
 import org.apache.sysml.runtime.DMLRuntimeException;
@@ -169,6 +180,13 @@ public class LibMatrixCUDA {
 		cudnnCreateTensorDescriptor(ret);
 		cudnnSetTensor4dDescriptor(ret, CUDNN_TENSOR_NCHW, CUDNN_DATA_DOUBLE, N, C, H, W);
 		return ret;
+	}
+	
+	private static cudnnPoolingDescriptor allocatePoolingDescriptor(int R, int S, int pad_h, int pad_w, int stride_h, int stride_w) {
+		cudnnPoolingDescriptor poolingDesc = new cudnnPoolingDescriptor();
+		cudnnCreatePoolingDescriptor(poolingDesc);
+		cudnnSetPooling2dDescriptor(poolingDesc, CUDNN_POOLING_MAX, R, S, pad_h, pad_w, stride_h, stride_w);
+		return poolingDesc;
 	}
 	
 	private static cudnnFilterDescriptor allocateFilterDescriptor(int K, int C, int R, int S) {
@@ -397,7 +415,199 @@ public class LibMatrixCUDA {
 				cudaFree(workSpace);
 		}
 	}
+
+	public static void maxpooling(MatrixObject image,
+			MatrixObject outputBlock, int N, int C, int H, int W, int K, int R,
+			int S, int pad_h, int pad_w, int stride_h, int stride_w, int P,
+			int Q) throws DMLRuntimeException {
+		Pointer alpha = null;
+		Pointer beta = null;
+		cudnnTensorDescriptor xDesc = null;
+		cudnnTensorDescriptor yDesc = null;
+		cudnnPoolingDescriptor poolingDesc = null;
+
+		try {
+			// Allocate descriptors
+			yDesc = allocateTensorDescriptor(N, C, P, Q);
+			xDesc = allocateTensorDescriptor(N, C, H, W);
+			poolingDesc = allocatePoolingDescriptor(R, S, pad_h, pad_w, stride_h, stride_w);
+			
+			// Allocate data
+			Pointer x = ((JCudaObject)image._gpuHandle).jcudaPointer; 
+			Pointer y = ((JCudaObject)outputBlock._gpuHandle).jcudaPointer; 
+			
+			alpha = pointerTo(1.0);
+			beta = pointerTo(0.0f);
+			
+			int status = cudnnPoolingForward(cudnnHandle, poolingDesc, alpha, xDesc, x, beta, yDesc, y);
+			
+			if(status != jcuda.jcudnn.cudnnStatus.CUDNN_STATUS_SUCCESS) {
+				throw new DMLRuntimeException("Could not executed cudnnPoolingForward: " + jcuda.jcudnn.cudnnStatus.stringFor(status));
+			}
+		}
+		finally {
+			if(alpha != null)
+				cudaFree(alpha);
+			if(beta != null)
+				cudaFree(beta);
+			if(yDesc != null)
+				cudnnDestroyTensorDescriptor(yDesc);
+			if(xDesc != null)
+				cudnnDestroyTensorDescriptor(xDesc);
+			if(poolingDesc != null)
+				cudnnDestroyPoolingDescriptor(poolingDesc);
+		}
+	}
+
+	public static void maxpooling_backward(MatrixObject image, MatrixObject dout,
+			MatrixObject outputBlock, int N, int C, int H, int W, int K, int R,
+			int S, int pad_h, int pad_w, int stride_h, int stride_w, int P,
+			int Q) throws DMLRuntimeException {
+		Pointer alpha = null;
+		Pointer beta = null;
+		cudnnTensorDescriptor xDesc = null;
+		cudnnTensorDescriptor yDesc = null;
+		cudnnTensorDescriptor dyDesc = null;
+		cudnnTensorDescriptor dxDesc = null;
+		cudnnPoolingDescriptor poolingDesc = null;
+
+		try {
+			
+			// calling forwardPooling first
+			xDesc = allocateTensorDescriptor(N, C, H, W);
+			yDesc = allocateTensorDescriptor(N, C, P, Q);
+			dxDesc = allocateTensorDescriptor(N, C, H, W);
+			dyDesc = allocateTensorDescriptor(N, C, P, Q);
+			
+			poolingDesc = allocatePoolingDescriptor(R, S, pad_h, pad_w, stride_h, stride_w);
+			
+			// Allocate data
+			Pointer y = new Pointer();
+			long numBytes = N*C*P*Q*Sizeof.DOUBLE;
+			cudaMalloc(y, numBytes);
+		//	y = new Pointer();
+			Pointer x = ((JCudaObject)image._gpuHandle).jcudaPointer;
+			 
+			Pointer dx = ((JCudaObject)outputBlock._gpuHandle).jcudaPointer;
+			Pointer dy = ((JCudaObject)dout._gpuHandle).jcudaPointer;
+			
+			alpha = pointerTo(1.0);
+			beta = pointerTo(0.0f);
+			
+			int status = cudnnPoolingForward(cudnnHandle, poolingDesc, alpha, xDesc, x, beta, yDesc, y);
+			
+			if(status != jcuda.jcudnn.cudnnStatus.CUDNN_STATUS_SUCCESS) {
+				throw new DMLRuntimeException("Could not executed cudnnPoolingForward before cudnnPoolingBackward: " + jcuda.jcudnn.cudnnStatus.stringFor(status));
+			}
+			
+			status = cudnnPoolingBackward(cudnnHandle, poolingDesc, alpha, yDesc, y, dyDesc, dy, xDesc, x, beta, dxDesc, dx);
+			
+			if(status != jcuda.jcudnn.cudnnStatus.CUDNN_STATUS_SUCCESS) {
+				throw new DMLRuntimeException("Could not executed cudnnPoolingBackward: " + jcuda.jcudnn.cudnnStatus.stringFor(status));
+			}
+			
+			cudaFree(y); 
+			// delete y
+		}
+		finally {
+			if(alpha != null)
+				cudaFree(alpha);
+			if(beta != null)
+				cudaFree(beta);
+			if(yDesc != null)
+				cudnnDestroyTensorDescriptor(yDesc);
+			if(xDesc != null)
+				cudnnDestroyTensorDescriptor(xDesc);
+			if(dyDesc != null)
+				cudnnDestroyTensorDescriptor(dyDesc);
+			if(dxDesc != null)
+				cudnnDestroyTensorDescriptor(dxDesc);
+			if(poolingDesc != null)
+				cudnnDestroyPoolingDescriptor(poolingDesc);	
+		}
+	}
 	
+	public static void relu(MatrixObject image,
+			MatrixObject outputBlock, int N, int C, int H, int W, int K, int R,
+			int S, int pad_h, int pad_w, int stride_h, int stride_w, int P,
+			int Q) throws DMLRuntimeException {
+		Pointer alpha = null;
+		Pointer beta = null;
+		cudnnTensorDescriptor xDesc = null;
+		cudnnTensorDescriptor yDesc = null;
+		
+		try {
+			// Allocate descriptors
+			xDesc = allocateTensorDescriptor(N, C, H, W);
+			yDesc = allocateTensorDescriptor(N, C, H, W);
+			
+			// Allocate data
+			Pointer x = ((JCudaObject)image._gpuHandle).jcudaPointer; 
+			Pointer y = ((JCudaObject)outputBlock._gpuHandle).jcudaPointer; 
+			
+			alpha = pointerTo(1.0);
+			beta = pointerTo(0.0f);
+			
+			int status = cudnnActivationForward(cudnnHandle, CUDNN_ACTIVATION_RELU, alpha, xDesc, x, beta, yDesc, y);
+                    
+			if(status != jcuda.jcudnn.cudnnStatus.CUDNN_STATUS_SUCCESS) {
+				throw new DMLRuntimeException("Could not executed cudnnActivationForward: " + jcuda.jcudnn.cudnnStatus.stringFor(status));
+			}
+		}
+		finally {
+			if(alpha != null)
+				cudaFree(alpha);
+			if(beta != null)
+				cudaFree(beta);
+			if(yDesc != null)
+				cudnnDestroyTensorDescriptor(yDesc);
+			if(xDesc != null)
+				cudnnDestroyTensorDescriptor(xDesc);
+		}
+	}
+
+	public static void relu_backward(MatrixObject image,
+			MatrixObject outputBlock, int N, int C, int H, int W, int K, int R,
+			int S, int pad_h, int pad_w, int stride_h, int stride_w, int P,
+			int Q) throws DMLRuntimeException {
+		//does nothing
+		/*
+		Pointer alpha = null;
+		Pointer beta = null;
+		cudnnTensorDescriptor xDesc = null;
+		cudnnTensorDescriptor yDesc = null;
+		
+		try {
+			// Allocate descriptors
+			xDesc = allocateTensorDescriptor(N, C, H, W);
+			yDesc = allocateTensorDescriptor(N, C, H, W);
+			
+			// Allocate data
+			Pointer x = ((JCudaObject)image._gpuHandle).jcudaPointer; 
+			Pointer y = ((JCudaObject)outputBlock._gpuHandle).jcudaPointer; 
+			
+			alpha = pointerTo(1.0);
+			beta = pointerTo(0.0f);
+			
+			int status = cudnnActivationForward(cudnnHandle, CUDNN_ACTIVATION_RELU, alpha, xDesc, x, beta, yDesc, y);
+                    
+			if(status != jcuda.jcudnn.cudnnStatus.CUDNN_STATUS_SUCCESS) {
+				throw new DMLRuntimeException("Could not executed cudnnActivationForward: " + jcuda.jcudnn.cudnnStatus.stringFor(status));
+			}
+		}
+		finally {
+			if(alpha != null)
+				cudaFree(alpha);
+			if(beta != null)
+				cudaFree(beta);
+			if(yDesc != null)
+				cudnnDestroyTensorDescriptor(yDesc);
+			if(xDesc != null)
+				cudnnDestroyTensorDescriptor(xDesc);
+		}
+		*/
+	}
+
 	public static boolean isInSparseFormat(MatrixObject mo) {
 		if(mo.getGPUObject() != null && mo.getGPUObject().isAllocated())
 			return mo.getGPUObject().isInSparseFormat();
