@@ -110,8 +110,21 @@ public class JCudaObject extends GPUObject {
 	
 	public void release(boolean isGPUCopyModified) throws CacheException {
 		if(numLocks.addAndGet(-1) < 0) {
-			throw new CacheException("Redundant release of GPU object");
+            throw new CacheException("Redundant release of GPU object");
 		}
+		if(evictionPolicy == EvictionPolicy.LRU) {
+            timestamp.set(System.nanoTime());
+		}
+		else if(evictionPolicy == EvictionPolicy.LFU) {
+            timestamp.addAndGet(1);
+		}
+		else if(evictionPolicy == EvictionPolicy.MIN_EVICT) {
+            // Do Nothing
+		}
+		else {
+            throw new CacheException("The eviction policy is not supported:" + evictionPolicy.name());
+		}
+
 		isDeviceCopyModified = isGPUCopyModified;
 	}
 
