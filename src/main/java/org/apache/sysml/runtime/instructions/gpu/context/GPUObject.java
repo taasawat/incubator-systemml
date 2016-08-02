@@ -59,8 +59,8 @@ public abstract class GPUObject
 	public abstract void acquireDenseDeviceModify(int numElemsToAllocate) throws DMLRuntimeException;
 	public abstract void acquireHostRead() throws CacheException;
 	public abstract void acquireHostModify() throws CacheException;
-	public abstract void release(boolean isGPUCopyModified) throws CacheException;
-	
+	public abstract void releaseInput() throws CacheException;
+	public abstract void releaseOutput() throws CacheException;
 	
 	// package-level visibility as these methods are guarded by underlying GPUContext
 	abstract void allocateMemoryOnDevice(int numElemToAllocate) throws DMLRuntimeException;

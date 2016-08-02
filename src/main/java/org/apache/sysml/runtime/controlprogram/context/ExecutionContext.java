@@ -302,7 +302,7 @@ public class ExecutionContext
 		throws DMLRuntimeException 
 	{
 		MatrixObject mo = getMatrixObject(varName);
-		mo.getGPUObject().release(false);
+		mo.getGPUObject().releaseInput();
 	}
 	
 	/**
@@ -373,10 +373,11 @@ public class ExecutionContext
 	
 	public void releaseMatrixOutputForGPUInstruction(String varName) throws DMLRuntimeException {
 		MatrixObject mo = getMatrixObject(varName);
+//		System.out.println("mo.getVarName() + mo.getGPUObject() + mo.getGPUObject().isAllocated" + mo.getVarName() + " + " + mo.getGPUObject() + " + " + mo.getGPUObject().isAllocated);
 		if(mo.getGPUObject() == null || !mo.getGPUObject().isAllocated) {
 			throw new DMLRuntimeException("No output is allocated on GPU");
 		}
-		mo.getGPUObject().release(true);
+		mo.getGPUObject().releaseOutput();
 	}
 	
 	/**

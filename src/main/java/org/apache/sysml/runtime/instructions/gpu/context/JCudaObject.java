@@ -82,14 +82,19 @@ public class JCudaObject extends GPUObject {
 	
 	@Override
 	public void acquireHostRead() throws CacheException {
+		System.out.println("1. Arrived inside acquireHostRead");
 		if(isAllocated) {
 			try {
 				if(isDeviceCopyModified) {
+					System.out.println("1. Arrived inside acquireHostRead, calling copyFromDeviceToHost");
 					copyFromDeviceToHost();
 				}
 			} catch (DMLRuntimeException e) {
 				throw new CacheException(e);
 			}
+		}
+		else {
+			throw new CacheException("Cannot perform acquireHostRead as the GPU data is not allocated:" + mat.getVarName());
 		}
 	}
 	
@@ -108,7 +113,7 @@ public class JCudaObject extends GPUObject {
 		}
 	}
 	
-	public void release(boolean isGPUCopyModified) throws CacheException {
+	private void updateReleaseLocks() throws CacheException {
 		if(numLocks.addAndGet(-1) < 0) {
             throw new CacheException("Redundant release of GPU object");
 		}
@@ -124,8 +129,19 @@ public class JCudaObject extends GPUObject {
 		else {
             throw new CacheException("The eviction policy is not supported:" + evictionPolicy.name());
 		}
-
-		isDeviceCopyModified = isGPUCopyModified;
+	}
+	
+	public void releaseInput() throws CacheException {
+		updateReleaseLocks();
+		if(!isAllocated)
+			throw new CacheException("Attempting to release an output before allocating it");
+	}
+	
+	public void releaseOutput() throws CacheException {
+		updateReleaseLocks();
+		isDeviceCopyModified = true;
+		if(!isAllocated)
+			throw new CacheException("Attempting to release an output before allocating it");
 	}
 
 	@Override
@@ -216,7 +232,9 @@ public class JCudaObject extends GPUObject {
 
 	@Override
 	protected void copyFromDeviceToHost() throws DMLRuntimeException {
+		
 		if(jcudaPointer != null) {
+			System.out.println("copyFromDeviceToHost:: just inside 1st if case");
 			printCaller();
 			if(LibMatrixCUDA.isInSparseFormat(mat))
 				throw new DMLRuntimeException("Sparse format not implemented");
@@ -228,9 +246,23 @@ public class JCudaObject extends GPUObject {
 				
 				cudaMemcpy(Pointer.to(data), jcudaPointer, data.length * Sizeof.DOUBLE, cudaMemcpyDeviceToHost);
 				
+				if(mat._data == null)
+					System.out.println("1 mat._data is null (expected)");
+				else 
+					System.out.println("1 mat._data is not null");
+		
 				tmp.recomputeNonZeros();
+				if(tmp.getDenseBlock() == null)
+					System.out.println("1 tmp.getDenseBlock() is null (not expected)");
+				
 				mat.acquireModify(tmp);
 				mat.release();
+				
+				if(mat._data == null)
+					System.out.println("2 mat._data is null (not expected)");
+				else 
+					System.out.println("2 mat._data is not null");
+				
 				
 				Statistics.cudaFromDevTime.addAndGet(System.nanoTime()-start);
 				Statistics.cudaFromDevCount.addAndGet(1);

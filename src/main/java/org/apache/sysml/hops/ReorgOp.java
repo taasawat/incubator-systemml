@@ -133,10 +133,10 @@ public class ReorgOp extends Hop implements MultiThreadedHop
 		{
 			case TRANSPOSE:
 			{
-				if(DMLScript.USE_ACCELERATOR && (DMLScript.FORCE_ACCELERATOR || getMemEstimate() < OptimizerUtils.GPU_MEMORY_BUDGET)) {
+/*				if(DMLScript.USE_ACCELERATOR && (DMLScript.FORCE_ACCELERATOR || getMemEstimate() < OptimizerUtils.GPU_MEMORY_BUDGET)) {
 					et = ExecType.GPU;
 				}
-				
+	*/			
 				Lop lin = getInput().get(0).constructLops();
 				if( lin instanceof Transform && ((Transform)lin).getOperationType()==OperationTypes.Transpose )
 					setLops(lin.getInputs().get(0)); //if input is already a transpose, avoid redundant transpose ops

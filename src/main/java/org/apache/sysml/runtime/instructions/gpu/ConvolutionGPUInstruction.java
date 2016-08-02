@@ -66,7 +66,8 @@ public class ConvolutionGPUInstruction extends GPUInstruction
 		
 		if( ( opcode.equalsIgnoreCase("conv2d")
 			 || opcode.equalsIgnoreCase("conv2d_backward_filter")
-			 || opcode.equalsIgnoreCase("conv2d_backward_data")) ) {
+			 || opcode.equalsIgnoreCase("conv2d_backward_data")
+			 || opcode.equalsIgnoreCase("maxpooling_backward")) ) {
 			InstructionUtils.checkNumFields(parts, 15);
 			CPOperand in1 = new CPOperand(parts[1]);
 			CPOperand in2 = new CPOperand(parts[2]);
@@ -159,9 +160,10 @@ public class ConvolutionGPUInstruction extends GPUInstruction
 			
 			ec.setMetaData(_output.getName(), N, K * P * Q);
 			MatrixObject out = ec.getMatrixOutputForGPUInstruction(_output.getName(), false);
+			System.out.println("****************1. GPU conv2d*************8");
 			LibMatrixCUDA.conv2d(image, filter, out, N, C, H, W,
 					K, R, S, pad_h, pad_w, stride_h, stride_w, P, Q);
-			
+			System.out.println("****************2. GPU conv2d****************");
 		}
 		else if (instOpcode.equalsIgnoreCase("conv2d_backward_filter")) {
 			MatrixObject image = ec.getMatrixInputForGPUInstruction(_input1.getName());
@@ -207,8 +209,28 @@ public class ConvolutionGPUInstruction extends GPUInstruction
 			
 			ec.setMetaData(_output.getName(), N, C * P * Q);
 			MatrixObject out = ec.getMatrixOutputForGPUInstruction(_output.getName(), false);
+			System.out.println("****************1. GPU Maxpooling****************");
 			LibMatrixCUDA.maxpooling(image, out, N, C, H, W,
 					K, R, S, pad_h, pad_w, stride_h, stride_w, P, Q);
+			System.out.println("****************2. GPU Maxpooling****************");
+		}
+		else if (instOpcode.equalsIgnoreCase("maxpooling_backward")) {
+			MatrixObject image = ec.getMatrixInputForGPUInstruction(_input1.getName());
+			MatrixObject dout = ec.getMatrixInputForGPUInstruction(_input2.getName());
+			if(LibMatrixCUDA.isInSparseFormat(image) || LibMatrixCUDA.isInSparseFormat(dout))
+				throw new DMLRuntimeException("Sparse maxpooling_backward_data not implemented");
+			if(dout.getNumRows() != N || dout.getNumColumns() != C*P*Q) 
+				throw new DMLRuntimeException("Incorrect dimensions for dout in maxpooling_backward");
+			if(image.getNumRows() != N || image.getNumColumns() != C*H*W) 
+				throw new DMLRuntimeException("Incorrect dimensions for image in maxpooling_backward: " + 
+						image.getNumRows() + " != " +  N + " || " + image.getNumColumns() + " != " + K*P*Q);
+			
+			ec.setMetaData(_output.getName(), N, C * H * W);
+			MatrixObject out = ec.getMatrixOutputForGPUInstruction(_output.getName(), false);
+			System.out.println("****************1. GPU Maxpooling Back****************");
+			LibMatrixCUDA.maxpooling_backward(image, dout, out, N, C, H, W,
+					K, R, S, pad_h, pad_w, stride_h, stride_w, P, Q);
+			System.out.println("****************2. GPU Maxpooling Back****************");
 		}
 		else {
 			throw new DMLRuntimeException("Unsupported GPU context for " + instOpcode);
