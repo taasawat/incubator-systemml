@@ -565,7 +565,7 @@ public class AggBinaryOp extends Hop implements MultiThreadedHop
 	//	System.out.println("2.2.ExecType et = getMemEstimate; ::  ExecType :: " + et);
 		if(DMLScript.USE_ACCELERATOR) {
 			et = ExecType.GPU;
-			System.out.println("3.1.ExecType et = USE_ACCELERATOR; ::  ExecType :: " + et);
+	//		System.out.println("3.1.ExecType et = USE_ACCELERATOR; ::  ExecType :: " + et);
 		}
 	//	System.out.println("3.2.ExecType et = USE_ACCELERATOR; ::  ExecType :: " + et);
 		Lop matmultCP = new MMTSJ(getInput().get(mmtsj.isLeft()?1:0).constructLops(),

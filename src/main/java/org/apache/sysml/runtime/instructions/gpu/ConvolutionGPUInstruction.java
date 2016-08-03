@@ -23,9 +23,12 @@ import java.util.ArrayList;
 import org.apache.sysml.runtime.DMLRuntimeException;
 import org.apache.sysml.runtime.controlprogram.caching.MatrixObject;
 import org.apache.sysml.runtime.controlprogram.context.ExecutionContext;
+import org.apache.sysml.runtime.controlprogram.parfor.stat.InfrastructureAnalyzer;
 import org.apache.sysml.runtime.functionobjects.SwapIndex;
+import org.apache.sysml.runtime.instructions.Instruction;
 import org.apache.sysml.runtime.instructions.InstructionUtils;
 import org.apache.sysml.runtime.instructions.cp.CPOperand;
+import org.apache.sysml.runtime.instructions.cp.ConvolutionCPInstruction;
 import org.apache.sysml.runtime.matrix.data.LibMatrixCUDA;
 import org.apache.sysml.runtime.matrix.operators.ReorgOperator;
 import org.apache.sysml.runtime.util.ConvolutionUtils;
@@ -123,10 +126,29 @@ public class ConvolutionGPUInstruction extends GPUInstruction
 		}
 	}
 	
+	private boolean isSparse(ExecutionContext ec, String var) throws DMLRuntimeException {
+		MatrixObject mo = ec.getMatrixObject(var);
+		return LibMatrixCUDA.isInSparseFormat(mo);
+	}
+	
 	@Override
 	public void processInstruction(ExecutionContext ec) 
 			throws DMLRuntimeException 
 	{
+		// TODO: Fix Me
+		if (instOpcode.equalsIgnoreCase("maxpooling")) {
+			if(	isSparse(ec, _input1.getName())) {
+				ConvolutionCPInstruction.parseInstruction(this.toString() + Instruction.OPERAND_DELIM + InfrastructureAnalyzer.getLocalParallelism()).processInstruction(ec);
+				return;
+			}
+		}
+		else {
+			if(	isSparse(ec, _input1.getName()) || isSparse(ec, _input2.getName())) {
+				ConvolutionCPInstruction.parseInstruction(this.toString() + Instruction.OPERAND_DELIM + InfrastructureAnalyzer.getLocalParallelism()).processInstruction(ec);
+				return;
+			}
+		}
+		
 		Statistics.incrementNoOfExecutedGPUInst();
 					
 		int pad_h = getScalarInput(ec, _padding, 0);
@@ -160,10 +182,10 @@ public class ConvolutionGPUInstruction extends GPUInstruction
 			
 			ec.setMetaData(_output.getName(), N, K * P * Q);
 			MatrixObject out = ec.getMatrixOutputForGPUInstruction(_output.getName(), false);
-			System.out.println("****************1. GPU conv2d*************8");
+//			System.out.println("****************1. GPU conv2d*************8");
 			LibMatrixCUDA.conv2d(image, filter, out, N, C, H, W,
 					K, R, S, pad_h, pad_w, stride_h, stride_w, P, Q);
-			System.out.println("****************2. GPU conv2d****************");
+	//		System.out.println("****************2. GPU conv2d****************");
 		}
 		else if (instOpcode.equalsIgnoreCase("conv2d_backward_filter")) {
 			MatrixObject image = ec.getMatrixInputForGPUInstruction(_input1.getName());
@@ -209,10 +231,10 @@ public class ConvolutionGPUInstruction extends GPUInstruction
 			
 			ec.setMetaData(_output.getName(), N, C * P * Q);
 			MatrixObject out = ec.getMatrixOutputForGPUInstruction(_output.getName(), false);
-			System.out.println("****************1. GPU Maxpooling****************");
+//			System.out.println("****************1. GPU Maxpooling****************");
 			LibMatrixCUDA.maxpooling(image, out, N, C, H, W,
 					K, R, S, pad_h, pad_w, stride_h, stride_w, P, Q);
-			System.out.println("****************2. GPU Maxpooling****************");
+//			System.out.println("****************2. GPU Maxpooling****************");
 		}
 		else if (instOpcode.equalsIgnoreCase("maxpooling_backward")) {
 			MatrixObject image = ec.getMatrixInputForGPUInstruction(_input1.getName());
@@ -227,10 +249,10 @@ public class ConvolutionGPUInstruction extends GPUInstruction
 			
 			ec.setMetaData(_output.getName(), N, C * H * W);
 			MatrixObject out = ec.getMatrixOutputForGPUInstruction(_output.getName(), false);
-			System.out.println("****************1. GPU Maxpooling Back****************");
+//			System.out.println("****************1. GPU Maxpooling Back****************");
 			LibMatrixCUDA.maxpooling_backward(image, dout, out, N, C, H, W,
 					K, R, S, pad_h, pad_w, stride_h, stride_w, P, Q);
-			System.out.println("****************2. GPU Maxpooling Back****************");
+	//		System.out.println("****************2. GPU Maxpooling Back****************");
 		}
 		else {
 			throw new DMLRuntimeException("Unsupported GPU context for " + instOpcode);
