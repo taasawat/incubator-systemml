@@ -82,11 +82,9 @@ public class JCudaObject extends GPUObject {
 	
 	@Override
 	public void acquireHostRead() throws CacheException {
-//		System.out.println("1. Arrived inside acquireHostRead");
 		if(isAllocated) {
 			try {
 				if(isDeviceCopyModified) {
-		//			System.out.println("1. Arrived inside acquireHostRead, calling copyFromDeviceToHost");
 					copyFromDeviceToHost();
 				}
 			} catch (DMLRuntimeException e) {
@@ -234,7 +232,6 @@ public class JCudaObject extends GPUObject {
 	protected void copyFromDeviceToHost() throws DMLRuntimeException {
 		
 		if(jcudaPointer != null) {
-//			System.out.println("copyFromDeviceToHost:: just inside 1st if case");
 			printCaller();
 			if(LibMatrixCUDA.isInSparseFormat(mat))
 				throw new DMLRuntimeException("Sparse format not implemented");
@@ -245,24 +242,10 @@ public class JCudaObject extends GPUObject {
 				double [] data = tmp.getDenseBlock();
 				
 				cudaMemcpy(Pointer.to(data), jcudaPointer, data.length * Sizeof.DOUBLE, cudaMemcpyDeviceToHost);
-/*				
-				if(mat._data == null)
-					System.out.println("1 mat._data is null (expected)");
-				else 
-					System.out.println("1 mat._data is not null");
-	*/	
+
 				tmp.recomputeNonZeros();
-//				if(tmp.getDenseBlock() == null)
-	//				System.out.println("1 tmp.getDenseBlock() is null (not expected)");
-				
 				mat.acquireModify(tmp);
-				mat.release();
-	/*			
-				if(mat._data == null)
-					System.out.println("2 mat._data is null (not expected)");
-				else 
-					System.out.println("2 mat._data is not null");*/
-				
+				mat.release();				
 				
 				Statistics.cudaFromDevTime.addAndGet(System.nanoTime()-start);
 				Statistics.cudaFromDevCount.addAndGet(1);

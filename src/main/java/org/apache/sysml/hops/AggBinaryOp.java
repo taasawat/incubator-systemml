@@ -557,17 +557,11 @@ public class AggBinaryOp extends Hop implements MultiThreadedHop
 		int k = OptimizerUtils.getConstrainedNumThreads(_maxNumThreads);
 		
 		ExecType et = ExecType.CP;
-	/*	System.out.println("1.ExecType et = ExecType.CP; ::  ExecType :: " + et);
-		if(DMLScript.USE_ACCELERATOR && (DMLScript.FORCE_ACCELERATOR || getMemEstimate() < OptimizerUtils.GPU_MEMORY_BUDGET)) {
-			et = ExecType.GPU;
-			System.out.println("2.1. ExecType et = getMemEstimate; ::  ExecType :: " + et);
-		}*/
-	//	System.out.println("2.2.ExecType et = getMemEstimate; ::  ExecType :: " + et);
+//		if(DMLScript.USE_ACCELERATOR && (DMLScript.FORCE_ACCELERATOR || getMemEstimate() < OptimizerUtils.GPU_MEMORY_BUDGET)) {
 		if(DMLScript.USE_ACCELERATOR) {
 			et = ExecType.GPU;
-	//		System.out.println("3.1.ExecType et = USE_ACCELERATOR; ::  ExecType :: " + et);
 		}
-	//	System.out.println("3.2.ExecType et = USE_ACCELERATOR; ::  ExecType :: " + et);
+		
 		Lop matmultCP = new MMTSJ(getInput().get(mmtsj.isLeft()?1:0).constructLops(),
 				                 getDataType(), getValueType(), et, mmtsj, k);
 	

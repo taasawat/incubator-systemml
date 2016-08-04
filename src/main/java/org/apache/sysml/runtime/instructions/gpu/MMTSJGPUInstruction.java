@@ -29,10 +29,6 @@ import org.apache.sysml.runtime.matrix.data.LibMatrixCUDA;
 import org.apache.sysml.runtime.matrix.operators.Operator;
 import org.apache.sysml.utils.Statistics;
 
-/**
- * 
- * 
- */
 public class MMTSJGPUInstruction extends GPUInstruction
 {
 
@@ -51,7 +47,6 @@ public class MMTSJGPUInstruction extends GPUInstruction
         }
 
         /**
-         * 
          * @param str
          * @return
          * @throws DMLRuntimeException
@@ -77,10 +72,9 @@ public class MMTSJGPUInstruction extends GPUInstruction
         public void processInstruction(ExecutionContext ec)
                 throws DMLRuntimeException
         {
-
                 Statistics.incrementNoOfExecutedGPUInst();
 
-                //get inputs
+                //get input
                 MatrixObject mat = ec.getMatrixInputForGPUInstruction(_input.getName());
                
                 boolean isLeftTransposed = ( _type == MMTSJType.LEFT);
@@ -91,7 +85,7 @@ public class MMTSJGPUInstruction extends GPUInstruction
                 //execute operations 
                 ec.setMetaData(_output.getName(), rlen, clen);
                 MatrixObject out = ec.getMatrixOutputForGPUInstruction(_output.getName(), false);
-                LibMatrixCUDA.matmultTSMM(mat, out, isLeftTransposed, !isLeftTransposed);
+                LibMatrixCUDA.matmultTSMM(mat, out, isLeftTransposed);
                 
                 ec.releaseMatrixInputForGPUInstruction(_input.getName());
                 ec.releaseMatrixOutputForGPUInstruction(_output.getName());
@@ -102,4 +96,3 @@ public class MMTSJGPUInstruction extends GPUInstruction
                 return _type;
         }
 }
-

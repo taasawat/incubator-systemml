@@ -182,10 +182,8 @@ public class ConvolutionGPUInstruction extends GPUInstruction
 			
 			ec.setMetaData(_output.getName(), N, K * P * Q);
 			MatrixObject out = ec.getMatrixOutputForGPUInstruction(_output.getName(), false);
-//			System.out.println("****************1. GPU conv2d*************8");
 			LibMatrixCUDA.conv2d(image, filter, out, N, C, H, W,
 					K, R, S, pad_h, pad_w, stride_h, stride_w, P, Q);
-	//		System.out.println("****************2. GPU conv2d****************");
 		}
 		else if (instOpcode.equalsIgnoreCase("conv2d_backward_filter")) {
 			MatrixObject image = ec.getMatrixInputForGPUInstruction(_input1.getName());
@@ -231,10 +229,8 @@ public class ConvolutionGPUInstruction extends GPUInstruction
 			
 			ec.setMetaData(_output.getName(), N, C * P * Q);
 			MatrixObject out = ec.getMatrixOutputForGPUInstruction(_output.getName(), false);
-//			System.out.println("****************1. GPU Maxpooling****************");
 			LibMatrixCUDA.maxpooling(image, out, N, C, H, W,
 					K, R, S, pad_h, pad_w, stride_h, stride_w, P, Q);
-//			System.out.println("****************2. GPU Maxpooling****************");
 		}
 		else if (instOpcode.equalsIgnoreCase("maxpooling_backward")) {
 			MatrixObject image = ec.getMatrixInputForGPUInstruction(_input1.getName());
@@ -249,10 +245,8 @@ public class ConvolutionGPUInstruction extends GPUInstruction
 			
 			ec.setMetaData(_output.getName(), N, C * H * W);
 			MatrixObject out = ec.getMatrixOutputForGPUInstruction(_output.getName(), false);
-//			System.out.println("****************1. GPU Maxpooling Back****************");
 			LibMatrixCUDA.maxpooling_backward(image, dout, out, N, C, H, W,
 					K, R, S, pad_h, pad_w, stride_h, stride_w, P, Q);
-	//		System.out.println("****************2. GPU Maxpooling Back****************");
 		}
 		else {
 			throw new DMLRuntimeException("Unsupported GPU context for " + instOpcode);

@@ -258,7 +258,7 @@ public class LibMatrixCUDA {
 	}
 
 	public static void matmultTSMM(MatrixObject left, MatrixObject output,
-            boolean isLeftTransposed, boolean isRightTransposed1) throws DMLRuntimeException {
+            boolean isLeftTransposed) throws DMLRuntimeException {
 	    if(isInSparseFormat(left)) {
 	            throw new DMLRuntimeException("Sparse GPU TSMM is not implemented");
 	    }

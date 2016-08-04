@@ -132,7 +132,7 @@ public abstract class CacheableData<T extends CacheBlock> extends Data
 	protected SoftReference<T> _cache = null;
 	
 	/** Container object that holds the actual data. */
-	public T _data = null;
+	protected T _data = null;
 
 	/**
 	 * Object that holds the metadata associated with the matrix, which
@@ -423,28 +423,13 @@ public abstract class CacheableData<T extends CacheBlock> extends Data
 		
 		//get object from cache
 		if( _data == null ) {
-			
-	//		System.out.println("Data is null, trying getCache" + getVarName());
 			getCache();
 		}
-	/*	
-		if(_data == null)
-			System.out.println("0 _data is null");
-		else 
-			System.out.println("0 _data is not null");
-		*/
 		if( _gpuHandle != null && _gpuHandle.isAllocated()) {
-	//		System.out.println("acquire host read called ");// + _gpuHandle);
 			_gpuHandle.acquireHostRead();
 			if( _data == null )
 				getCache();
 		}
-	/*	
-		if(_data == null)
-			System.out.println("3 _data is null **************");
-		else 
-			System.out.println("3 _data is not null **************");
-	*/	
 		//read data from HDFS/RDD if required
 		//(probe data for cache_nowrite / jvm_reuse)  
 		if( isEmpty(true) && _data==null ) 
@@ -457,10 +442,9 @@ public abstract class CacheableData<T extends CacheBlock> extends Data
 				if( getRDDHandle()==null || getRDDHandle().allowsShortCircuitRead() )
 				{
 					//check filename
-					if( _hdfsFileName == null ) {
-						//.println("Inside _hdfsFileName, GPUHandleValue = " + _gpuHandle + " :: data = " + _data);
+					if( _hdfsFileName == null )
 						throw new CacheException("Cannot read matrix for empty filename.");
-					}
+				
 					//read cacheable data from hdfs
 					_data = readBlobFromHDFS( _hdfsFileName );
 					
@@ -578,23 +562,22 @@ public abstract class CacheableData<T extends CacheBlock> extends Data
 	public synchronized T acquireModify(T newData)
 		throws CacheException
 	{
-	//	System.out.println(">>>>>>>Before acquireModify>>>>>>>>>>" + isCached(true) + " " + _cacheStatus.name());
 		if( LOG.isTraceEnabled() )
 			LOG.trace("Acquire modify newdata "+getVarName());
 		long t0 = DMLScript.STATISTICS ? System.nanoTime() : 0;
 		
 		if (! isAvailableToModify ())
 			throw new CacheException ("CacheableData not available to modify.");
-	//	System.out.println("2.>>>>>>>After acquireModify>>>>>>>>>>" + isCached(true) + " " + _cacheStatus.name());
+
 		//clear old data 
-		clearData(); 
-	//	System.out.println("3.>>>>>>>After acquireModify>>>>>>>>>>" + isCached(true) + " " + _cacheStatus.name());
+		clearData();
+		
 		//cache status maintenance
 		acquire (true, false); //no need to load evicted matrix
-	//	System.out.println("4.>>>>>>>After acquireModify>>>>>>>>>>" + isCached(true) + " " + _cacheStatus.name());
+		
 		setDirty(true);
 		_isAcquireFromEmpty = false;
-	//	System.out.println("5.>>>>>>>After acquireModify>>>>>>>>>>" + isCached(true) + " " + _cacheStatus.name());
+		
 		//set references to new data
 		_data = newData; 
 		
@@ -604,7 +587,6 @@ public abstract class CacheableData<T extends CacheBlock> extends Data
 			long t1 = System.nanoTime();
 			CacheStatistics.incrementAcquireMTime(t1-t0);
 		}
-//		System.out.println("1.>>>>>>>After acquireModify>>>>>>>>>>" + isCached(true) + " " + _cacheStatus.name());
 		return _data;
 	}
 	
@@ -623,7 +605,6 @@ public abstract class CacheableData<T extends CacheBlock> extends Data
 	public synchronized void release() 
 		throws CacheException
 	{
-//		System.out.println(">>>>>>>Before release>>>>>>>>>>" + isCached(true) + " " + _cacheStatus.name());
 		if( LOG.isTraceEnabled() )
 			LOG.trace("Release "+getVarName());
 		long t0 = DMLScript.STATISTICS ? System.nanoTime() : 0;
@@ -646,7 +627,6 @@ public abstract class CacheableData<T extends CacheBlock> extends Data
 		release(_isAcquireFromEmpty && !_requiresLocalWrite);
 		updateStatusPinned(false);
 		
-//		System.out.println(">>>>>>>>>>>>>>>>>" + isCached(true) + " " + _cacheStatus.name());
 		if(    isCachingActive() //only if caching is enabled (otherwise keep everything in mem)
 			&& isCached(true)    //not empty and not read/modify
 			&& !isBelowCachingThreshold() ) //min size for caching
@@ -667,7 +647,6 @@ public abstract class CacheableData<T extends CacheBlock> extends Data
 			
 			//create cache
 			createCache();
-	//		System.out.println("See!! I'm that bug.. I'm setting _data = null");
 			_data = null;			
 		}
 		else if( LOG.isTraceEnabled() ){
@@ -678,7 +657,6 @@ public abstract class CacheableData<T extends CacheBlock> extends Data
 			long t1 = System.nanoTime();
 			CacheStatistics.incrementReleaseTime(t1-t0);
 		}
-	//	System.out.println(">>>>>>>After release>>>>>>>>>>" + isCached(true) + " " + _cacheStatus.name());
 	}
 	
 	protected void clearReusableData() {}
@@ -695,7 +673,6 @@ public abstract class CacheableData<T extends CacheBlock> extends Data
 	public synchronized void clearData() 
 		throws CacheException
 	{
-	//	System.out.println(">>>>>>>Before clearData>>>>>>>>>>" + isCached(true) + " " + _cacheStatus.name());
 		if( LOG.isTraceEnabled() )
 			LOG.trace("Clear data "+getVarName());
 		
@@ -727,7 +704,6 @@ public abstract class CacheableData<T extends CacheBlock> extends Data
 		// change object state EMPTY
 		setDirty(false);
 		setEmpty();
-	//	System.out.println(">>>>>>>After clearData>>>>>>>>>>" + isCached(true) + " " + _cacheStatus.name());
 	}
 	
 	/**

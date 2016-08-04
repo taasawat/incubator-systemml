@@ -94,13 +94,7 @@ public class TransposeSelfMatrixMultiplication extends AutomatedTestBase
         {
                 runTransposeSelfMatrixMultiplication(false, ExecType.CP, false, false);
         }
-        /*
-        @Test
-        public void testTransposeMMDenseDenseCP3() 
-        {
-                runTransposeSelfMatrixMultiplication(false, ExecType.CP, true, true);
-        }
-        */
+        
         /**
          * 
          * @param sparseM1

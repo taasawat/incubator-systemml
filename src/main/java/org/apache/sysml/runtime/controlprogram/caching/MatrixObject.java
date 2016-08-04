@@ -34,6 +34,7 @@ import org.apache.sysml.runtime.DMLRuntimeException;
 import org.apache.sysml.runtime.controlprogram.ParForProgramBlock.PDataPartitionFormat;
 import org.apache.sysml.runtime.controlprogram.context.SparkExecutionContext;
 import org.apache.sysml.runtime.instructions.gpu.context.GPUContext;
+import org.apache.sysml.runtime.instructions.gpu.context.GPUObject;
 import org.apache.sysml.runtime.instructions.spark.data.RDDObject;
 import org.apache.sysml.runtime.matrix.MatrixCharacteristics;
 import org.apache.sysml.runtime.matrix.MatrixDimensionsMetaData;
@@ -237,8 +238,10 @@ public class MatrixObject extends CacheableData<MatrixBlock>
 	
 	@Override
 	protected void exportGPUData() throws CacheException {
-		if(DMLScript.USE_ACCELERATOR && getGPUObject() != null) {
-			getGPUObject().acquireHostRead();
+		if(DMLScript.USE_ACCELERATOR) {
+			GPUObject gpuObj = getGPUObject();
+			if(gpuObj != null && gpuObj.isAllocated())
+				gpuObj.acquireHostRead();
 		}
 	}
 	

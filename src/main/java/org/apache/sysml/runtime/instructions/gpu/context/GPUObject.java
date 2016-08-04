@@ -84,61 +84,60 @@ public abstract class GPUObject
         Statistics.cudaEvictionCount.addAndGet(1);
 
         synchronized(evictionLock) {
-                Collections.sort(GPUContext.allocatedPointers, new Comparator<GPUObject>() {
+        	Collections.sort(GPUContext.allocatedPointers, new Comparator<GPUObject>() {
 
-                        @Override
-                        public int compare(GPUObject p1, GPUObject p2) {
-                                long p1Val = p1.numLocks.get();
-                                long p2Val = p2.numLocks.get();
+        		@Override
+                public int compare(GPUObject p1, GPUObject p2) {
+                	long p1Val = p1.numLocks.get();
+                 	long p2Val = p2.numLocks.get();
 
-                                if(p1Val>0 && p2Val>0) {
-                                        // Both are locked, so don't sort
-                                        return 0;
-                                }
-                                else if(p1Val>0 || p2Val>0) {
-                                        // Put the unlocked one to RHS
-                                        return Long.compare(p2Val, p1Val);
-                                }
-                                else {
-                                        // Both are unlocked
-
-                                        if(evictionPolicy == EvictionPolicy.MIN_EVICT) {
-                                                long p1Size = 0; long p2Size = 0;
-                                                try {
-                                                    p1Size = p1.getSizeOnDevice() - GPUSize;
-                                                    p2Size = p2.getSizeOnDevice() - GPUSize;
-                                            } catch (DMLRuntimeException e) {
-                                                    throw new RuntimeException(e);
-                                            }
-
-                                            if(p1Size>=0 && p2Size>=0 ) {
-                                                    return Long.compare(p2Size, p1Size);
-                                            }
-                                            else {
-                                                    return Long.compare(p1Size, p2Size);
-                                            }
-                                    }
-
-                                    else if(evictionPolicy == EvictionPolicy.LRU || evictionPolicy == EvictionPolicy.LFU) {
-                                            return Long.compare(p2.timestamp.get(), p1.timestamp.get());
-                                    }
-                                    else {
-                                            throw new RuntimeException("Unsupported eviction policy:" + evictionPolicy.name());
-                                    }
-                            }
+                	if(p1Val>0 && p2Val>0) {
+                		// Both are locked, so don't sort
+                        return 0;
+                	}
+                	else if(p1Val>0 || p2Val>0) {
+                		// Put the unlocked one to RHS
+                		return Long.compare(p2Val, p1Val);
                     }
-            });
+                	else {
+                		// Both are unlocked
 
-            while(GPUSize > getAvailableMemory() && GPUContext.allocatedPointers.size() > 0) {
-            	GPUObject toBeRemoved = GPUContext.allocatedPointers.get(GPUContext.allocatedPointers.size() - 1);
-                if(toBeRemoved.numLocks.get() > 0) {
-                	throw new DMLRuntimeException("There is not enough memory on device for this matrix!");
-                }
-                if(toBeRemoved.isDeviceCopyModified) {
-                	toBeRemoved.copyFromDeviceToHost();
-                }
-                toBeRemoved.clearData();
-            }
+                		if(evictionPolicy == EvictionPolicy.MIN_EVICT) {
+                			long p1Size = 0; long p2Size = 0;
+                          	try {
+                          		p1Size = p1.getSizeOnDevice() - GPUSize;
+                            	p2Size = p2.getSizeOnDevice() - GPUSize;
+                         	} catch (DMLRuntimeException e) {
+                         		throw new RuntimeException(e);
+                        	}
+
+                          	if(p1Size>=0 && p2Size>=0 ) {
+                          		return Long.compare(p2Size, p1Size);
+                          	}
+                          	else {
+                          		return Long.compare(p1Size, p2Size);
+                          	}
+                     	}
+                		else if(evictionPolicy == EvictionPolicy.LRU || evictionPolicy == EvictionPolicy.LFU) {
+                			return Long.compare(p2.timestamp.get(), p1.timestamp.get());
+                    	}
+                     	else {
+                     		throw new RuntimeException("Unsupported eviction policy:" + evictionPolicy.name());
+                    	}
+                	}
+              	}
+        	});
+
+        	while(GPUSize > getAvailableMemory() && GPUContext.allocatedPointers.size() > 0) {
+        		GPUObject toBeRemoved = GPUContext.allocatedPointers.get(GPUContext.allocatedPointers.size() - 1);
+               	if(toBeRemoved.numLocks.get() > 0) {
+               		throw new DMLRuntimeException("There is not enough memory on device for this matrix!");
+              	}
+               	if(toBeRemoved.isDeviceCopyModified) {
+               		toBeRemoved.copyFromDeviceToHost();
+            	}
+             	toBeRemoved.clearData();
+        	}
         }
 	}
 	
