@@ -132,7 +132,7 @@ public class ReorgOp extends Hop implements MultiThreadedHop
 		switch( op )
 		{
 			case TRANSPOSE:
-			{			
+			{
 				Lop lin = getInput().get(0).constructLops();
 				if( lin instanceof Transform && ((Transform)lin).getOperationType()==OperationTypes.Transpose )
 					setLops(lin.getInputs().get(0)); //if input is already a transpose, avoid redundant transpose ops

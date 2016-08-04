@@ -422,9 +422,9 @@ public abstract class CacheableData<T extends CacheBlock> extends Data
 			throw new CacheException ("MatrixObject not available to read.");
 		
 		//get object from cache
-		if( _data == null ) {
+		if( _data == null )
 			getCache();
-		}
+			
 		if( _gpuHandle != null && _gpuHandle.isAllocated()) {
 			_gpuHandle.acquireHostRead();
 			if( _data == null )
@@ -444,7 +444,7 @@ public abstract class CacheableData<T extends CacheBlock> extends Data
 					//check filename
 					if( _hdfsFileName == null )
 						throw new CacheException("Cannot read matrix for empty filename.");
-				
+					
 					//read cacheable data from hdfs
 					_data = readBlobFromHDFS( _hdfsFileName );
 					
@@ -460,7 +460,7 @@ public abstract class CacheableData<T extends CacheBlock> extends Data
 					//mark for initial local write (prevent repeated execution of rdd operations)
 					if( writeStatus.booleanValue() )
 						_requiresLocalWrite = CACHING_WRITE_CACHE_ON_READ;
-					else		
+					else
 						_requiresLocalWrite = true;
 				}
 				
@@ -568,8 +568,8 @@ public abstract class CacheableData<T extends CacheBlock> extends Data
 		
 		if (! isAvailableToModify ())
 			throw new CacheException ("CacheableData not available to modify.");
-
-		//clear old data 
+		
+		//clear old data
 		clearData();
 		
 		//cache status maintenance
@@ -579,14 +579,16 @@ public abstract class CacheableData<T extends CacheBlock> extends Data
 		_isAcquireFromEmpty = false;
 		
 		//set references to new data
-		_data = newData; 
-		
+		if (newData == null)
+			throw new CacheException("acquireModify with empty cache block.");
+		_data = newData;
 		updateStatusPinned(true);
 		
 		if( DMLScript.STATISTICS ){
 			long t1 = System.nanoTime();
 			CacheStatistics.incrementAcquireMTime(t1-t0);
 		}
+		
 		return _data;
 	}
 	

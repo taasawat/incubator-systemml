@@ -230,7 +230,6 @@ public class JCudaObject extends GPUObject {
 
 	@Override
 	protected void copyFromDeviceToHost() throws DMLRuntimeException {
-		
 		if(jcudaPointer != null) {
 			printCaller();
 			if(LibMatrixCUDA.isInSparseFormat(mat))
@@ -245,7 +244,7 @@ public class JCudaObject extends GPUObject {
 
 				tmp.recomputeNonZeros();
 				mat.acquireModify(tmp);
-				mat.release();				
+				mat.release();
 				
 				Statistics.cudaFromDevTime.addAndGet(System.nanoTime()-start);
 				Statistics.cudaFromDevCount.addAndGet(1);

@@ -67,33 +67,19 @@ public class AggregateBinaryGPUInstruction extends GPUInstruction
 		String[] parts = InstructionUtils.getInstructionPartsWithValueType(str);
 		String opcode = parts[0];
 
-		if(opcode.equalsIgnoreCase("ba+*")) {
-			InstructionUtils.checkNumFields( parts, 5 );
-			CPOperand in1 = new CPOperand(parts[1]);
-			CPOperand in2 = new CPOperand(parts[2]);
-			CPOperand out = new CPOperand(parts[3]);		
-			boolean isLeftTransposed = Boolean.parseBoolean(parts[4]);
-			boolean isRightTransposed = Boolean.parseBoolean(parts[5]);
-			
-			AggregateOperator agg = new AggregateOperator(0, Plus.getPlusFnObject());
-			AggregateBinaryOperator aggbin = new AggregateBinaryOperator(Multiply.getMultiplyFnObject(), agg, 1);
-			return new AggregateBinaryGPUInstruction(aggbin, in1, in2, out, opcode, str, isLeftTransposed, isRightTransposed);
-		}
-		else if(opcode.equalsIgnoreCase("tsmm")) {
-			InstructionUtils.checkNumFields( parts, 3 );
-			CPOperand in1 = new CPOperand(parts[1]);
-			CPOperand out = new CPOperand(parts[2]);
-			boolean isLeftTransposed = Boolean.parseBoolean(parts[3]);
-			
-			AggregateOperator agg = new AggregateOperator(0, Plus.getPlusFnObject());
-			AggregateBinaryOperator aggbin = new AggregateBinaryOperator(Multiply.getMultiplyFnObject(), agg, 1);
-			return new AggregateBinaryGPUInstruction(aggbin, in1, null, out, opcode, str, isLeftTransposed, false);
-		}
-		else {
-			throw new DMLRuntimeException("AggregateBinaryInstruction.parseInstruction():: Unknown opcode " + opcode);
+		if ( !opcode.equalsIgnoreCase("ba+*")) {
+ 			throw new DMLRuntimeException("AggregateBinaryInstruction.parseInstruction():: Unknown opcode " + opcode);
 		}
 		
-			
+		InstructionUtils.checkNumFields( parts, 5 );
+		CPOperand in1 = new CPOperand(parts[1]);
+		CPOperand in2 = new CPOperand(parts[2]);
+		CPOperand out = new CPOperand(parts[3]);
+		boolean isLeftTransposed = Boolean.parseBoolean(parts[4]);
+		boolean isRightTransposed = Boolean.parseBoolean(parts[5]);
+		AggregateOperator agg = new AggregateOperator(0, Plus.getPlusFnObject());
+		AggregateBinaryOperator aggbin = new AggregateBinaryOperator(Multiply.getMultiplyFnObject(), agg, 1);
+		return new AggregateBinaryGPUInstruction(aggbin, in1, in2, out, opcode, str, isLeftTransposed, isRightTransposed);	
 	}
 	
 	@Override
