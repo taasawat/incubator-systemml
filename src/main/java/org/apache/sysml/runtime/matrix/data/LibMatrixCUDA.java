@@ -257,6 +257,21 @@ public class LibMatrixCUDA {
 		
 	}
 
+	public static void transpose(MatrixObject in, MatrixObject out) throws DMLRuntimeException {
+		cublasHandle handle = new jcuda.jcublas.cublasHandle();
+		
+		Pointer alpha = pointerTo(1.0);
+		Pointer beta = pointerTo(0.0);
+		
+	    int m = (int) in.getNumRows();
+	    int n = (int) in.getNumColumns();
+	    int lda = n, ldc = m;
+	    
+	    Pointer A = ((JCudaObject)in.getGPUObject()).jcudaPointer;
+	    Pointer C = ((JCudaObject)out.getGPUObject()).jcudaPointer;
+	    
+		JCublas2.cublasDgeam(handle, 'T', 'T', m, n, alpha, A, lda, beta, A, lda, C, ldc);
+	}
 	public static void matmultTSMM(MatrixObject left, MatrixObject output,
             boolean isLeftTransposed) throws DMLRuntimeException {
 	    if(isInSparseFormat(left)) {
