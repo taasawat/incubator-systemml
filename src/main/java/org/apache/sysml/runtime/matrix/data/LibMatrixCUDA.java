@@ -51,6 +51,8 @@ import jcuda.Sizeof;
 import jcuda.jcublas.JCublas;
 import jcuda.jcublas.JCublas2;
 import jcuda.jcublas.cublasHandle;
+import static jcuda.jcublas.cublasOperation.CUBLAS_OP_N;
+import static jcuda.jcublas.cublasOperation.CUBLAS_OP_T;
 import jcuda.jcublas.cublasPointerMode;
 import jcuda.jcublas.cublasStatus;
 import jcuda.jcudnn.cudnnConvolutionDescriptor;
@@ -263,23 +265,25 @@ public class LibMatrixCUDA {
 	}
 
 	public static void transpose(MatrixObject in, MatrixObject out) throws DMLRuntimeException {
-		cublasHandle handle;
+/*		cublasHandle handle;
 		handle = new cublasHandle();
 		JCublas2.cublasCreate(handle);
 		JCublas2.cublasSetPointerMode(handle, cublasPointerMode.CUBLAS_POINTER_MODE_HOST);
-		
-		Pointer alpha = pointerTo(1.0);
-		Pointer beta = pointerTo(0.0);
+	*/	
+		Pointer alpha = null;
+		alpha = pointerTo(1.0);
+		Pointer beta = null;
+		beta = pointerTo(0.0);
 
-		int m = (int) in.getNumColumns();
-	    int n = (int) in.getNumRows();
-	    int lda = m;
-	    int ldc = n;
-	    
+		int m = (int) in.getNumRows();
+		int n = (int) in.getNumColumns();
+		int lda = n;
+	    int ldc = m;
+
 	    Pointer A = ((JCudaObject)in.getGPUObject()).jcudaPointer;
 	    Pointer C = ((JCudaObject)out.getGPUObject()).jcudaPointer;
-	    
-	    JCublas2.cublasDgeam(handle /*cublasHandle*/, 'T', 'T', m, n, alpha, A, lda, beta, A, lda, C, ldc);
+
+	    JCublas2.cublasDgeam(cublasHandle, CUBLAS_OP_T, CUBLAS_OP_T, m, n, alpha, A, lda, beta, A, lda, C, ldc);
 	}
 	
 	public static void matmultTSMM(MatrixObject left, MatrixObject output,
@@ -300,7 +304,7 @@ public class LibMatrixCUDA {
 	
 	    double alpha = 1.0d;
 	    double beta = 0.0d;
-	
+	    
 	    int lda = (int) (isLeftTransposed ? m : k);
 	    int ldc = m;
 	
@@ -332,6 +336,7 @@ public class LibMatrixCUDA {
 		
 		char transa = isLeftTransposed ? 'T' : 'N';
 		char transb = isRightTransposed ? 'T' : 'N';
+		
 		// Note: the dimensions are swapped
 		int m = (int) (isLeftTransposed ? left.getNumRows() : left.getNumColumns()) ;
 		int n = (int) (isRightTransposed ? right.getNumColumns() : right.getNumRows());
@@ -359,7 +364,8 @@ public class LibMatrixCUDA {
 		Pointer B = ((JCudaObject)right.getGPUObject()).jcudaPointer;
 		Pointer C = ((JCudaObject)output.getGPUObject()).jcudaPointer;
 		
-		JCublas.cublasDgemm(transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
+		JCublas.cublasDgemm( transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
+		
 	}
 
 	public static void conv2d_backward_data(MatrixObject filter, MatrixObject dout,
