@@ -69,7 +69,7 @@ public class FullTransposeTest extends AutomatedTestBase
 	{
 		runTransposeTest(OpType.MATRIX, false, ExecType.CP);
 	}
-	
+	/*
 	@Test
 	public void testTransposeRowVectorDenseCP() 
 	{
@@ -174,7 +174,7 @@ public class FullTransposeTest extends AutomatedTestBase
 		runTransposeTest(OpType.COL_VECTOR, true, ExecType.MR);
 	}
 	
-	
+	*/
 	
 	/**
 	 * 

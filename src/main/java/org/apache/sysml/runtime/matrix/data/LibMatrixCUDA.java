@@ -51,15 +51,20 @@ import jcuda.Sizeof;
 import jcuda.jcublas.JCublas;
 import jcuda.jcublas.JCublas2;
 import jcuda.jcublas.cublasHandle;
+import jcuda.jcublas.cublasPointerMode;
+import jcuda.jcublas.cublasStatus;
 import jcuda.jcudnn.cudnnConvolutionDescriptor;
 import jcuda.jcudnn.cudnnFilterDescriptor;
 import jcuda.jcudnn.cudnnHandle;
 import jcuda.jcudnn.cudnnPoolingDescriptor;
 import jcuda.jcudnn.cudnnTensorDescriptor;
+import jcuda.runtime.JCuda;
 
 import org.apache.sysml.runtime.DMLRuntimeException;
 import org.apache.sysml.runtime.controlprogram.caching.MatrixObject;
 import org.apache.sysml.runtime.instructions.gpu.context.JCudaObject;
+
+import static jcuda.jcublas.JCublas2.cublasCreate;
 
 //FIXME move could to respective instructions, this is not a block library
 public class LibMatrixCUDA {
@@ -258,20 +263,25 @@ public class LibMatrixCUDA {
 	}
 
 	public static void transpose(MatrixObject in, MatrixObject out) throws DMLRuntimeException {
-		cublasHandle handle = new jcuda.jcublas.cublasHandle();
+		cublasHandle handle;
+		handle = new cublasHandle();
+		JCublas2.cublasCreate(handle);
+		JCublas2.cublasSetPointerMode(handle, cublasPointerMode.CUBLAS_POINTER_MODE_HOST);
 		
 		Pointer alpha = pointerTo(1.0);
 		Pointer beta = pointerTo(0.0);
-		
-	    int m = (int) in.getNumRows();
-	    int n = (int) in.getNumColumns();
-	    int lda = n, ldc = m;
+
+		int m = (int) in.getNumColumns();
+	    int n = (int) in.getNumRows();
+	    int lda = m;
+	    int ldc = n;
 	    
 	    Pointer A = ((JCudaObject)in.getGPUObject()).jcudaPointer;
 	    Pointer C = ((JCudaObject)out.getGPUObject()).jcudaPointer;
 	    
-		JCublas2.cublasDgeam(handle, 'T', 'T', m, n, alpha, A, lda, beta, A, lda, C, ldc);
+	    JCublas2.cublasDgeam(handle /*cublasHandle*/, 'T', 'T', m, n, alpha, A, lda, beta, A, lda, C, ldc);
 	}
+	
 	public static void matmultTSMM(MatrixObject left, MatrixObject output,
             boolean isLeftTransposed) throws DMLRuntimeException {
 	    if(isInSparseFormat(left)) {

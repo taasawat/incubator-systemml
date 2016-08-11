@@ -29,6 +29,7 @@ import org.apache.sysml.utils.Statistics;
 import jcuda.driver.JCudaDriver;
 import jcuda.jcublas.JCublas2;
 import jcuda.jcublas.cublasHandle;
+import jcuda.jcublas.cublasPointerMode;
 import jcuda.jcudnn.JCudnn;
 import jcuda.runtime.JCuda;
 import jcuda.jcudnn.cudnnHandle;
@@ -114,7 +115,8 @@ public class JCudaContext extends GPUContext {
 		LibMatrixCUDA.cudnnHandle = new cudnnHandle();
 		cudnnCreate(LibMatrixCUDA.cudnnHandle);
 		LibMatrixCUDA.cublasHandle = new cublasHandle();
-		cublasCreate(LibMatrixCUDA.cublasHandle);
+		JCublas2.cublasCreate(LibMatrixCUDA.cublasHandle); //cublasCreate(LibMatrixCUDA.cublasHandle);
+		JCublas2.cublasSetPointerMode(LibMatrixCUDA.cublasHandle, cublasPointerMode.CUBLAS_POINTER_MODE_HOST);
 		Statistics.cudaLibrariesInitTime = System.nanoTime() - start;
 		
 		long free [] = { 0 };

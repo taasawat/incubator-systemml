@@ -26,6 +26,7 @@ import org.apache.sysml.runtime.instructions.gpu.ConvolutionGPUInstruction;
 import org.apache.sysml.runtime.instructions.gpu.GPUInstruction;
 import org.apache.sysml.runtime.instructions.gpu.GPUInstruction.GPUINSTRUCTION_TYPE;
 import org.apache.sysml.runtime.instructions.gpu.MMTSJGPUInstruction;
+import org.apache.sysml.runtime.instructions.gpu.ReorgGPUInstruction;
 
 public class GPUInstructionParser  extends InstructionParser 
 {
@@ -39,6 +40,7 @@ public class GPUInstructionParser  extends InstructionParser
 		String2GPUInstructionType.put( "maxpooling_backward",    GPUINSTRUCTION_TYPE.Convolution);
 		String2GPUInstructionType.put( "ba+*",                   GPUINSTRUCTION_TYPE.AggregateBinary);
 		String2GPUInstructionType.put( "tsmm",                   GPUINSTRUCTION_TYPE.MMTSJ);
+		String2GPUInstructionType.put( "r'",                   	 GPUINSTRUCTION_TYPE.Reorg);
 	}
 	
 	public static GPUInstruction parseSingleInstruction (String str ) 
@@ -73,6 +75,9 @@ public class GPUInstructionParser  extends InstructionParser
 				
 			case MMTSJ:
 				return MMTSJGPUInstruction.parseInstruction(str);
+			
+			case Reorg:
+				return ReorgGPUInstruction.parseInstruction(str);
 				
 			default: 
 				throw new DMLRuntimeException("Invalid GPU Instruction Type: " + gputype );
