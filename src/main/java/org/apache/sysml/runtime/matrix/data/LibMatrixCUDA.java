@@ -265,15 +265,8 @@ public class LibMatrixCUDA {
 	}
 
 	public static void transpose(MatrixObject in, MatrixObject out) throws DMLRuntimeException {
-/*		cublasHandle handle;
-		handle = new cublasHandle();
-		JCublas2.cublasCreate(handle);
-		JCublas2.cublasSetPointerMode(handle, cublasPointerMode.CUBLAS_POINTER_MODE_HOST);
-	*/	
-		Pointer alpha = null;
-		alpha = pointerTo(1.0);
-		Pointer beta = null;
-		beta = pointerTo(0.0);
+		Pointer alpha = pointerTo(1.0);
+		Pointer beta = pointerTo(0.0);
 
 		int m = (int) in.getNumRows();
 		int n = (int) in.getNumColumns();
@@ -282,7 +275,7 @@ public class LibMatrixCUDA {
 
 	    Pointer A = ((JCudaObject)in.getGPUObject()).jcudaPointer;
 	    Pointer C = ((JCudaObject)out.getGPUObject()).jcudaPointer;
-
+	    
 	    JCublas2.cublasDgeam(cublasHandle, CUBLAS_OP_T, CUBLAS_OP_T, m, n, alpha, A, lda, beta, A, lda, C, ldc);
 	}
 	

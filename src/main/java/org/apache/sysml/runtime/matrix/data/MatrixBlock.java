@@ -1166,7 +1166,8 @@ public class MatrixBlock extends MatrixValue implements CacheBlock, Externalizab
 		double sizeSparse = estimateSizeSparseOnDisk(nrows, ncols, nnz);
 		double sizeDense = estimateSizeDenseOnDisk(nrows, ncols);
 		
-		return lsparse && (sizeSparse<sizeDense || sizeUltraSparse<sizeDense);		
+	//	return lsparse && (sizeSparse<sizeDense || sizeUltraSparse<sizeDense);		
+		return false;
 	}
 	
 	
