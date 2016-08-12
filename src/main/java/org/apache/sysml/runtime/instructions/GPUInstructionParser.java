@@ -41,6 +41,7 @@ public class GPUInstructionParser  extends InstructionParser
 		String2GPUInstructionType.put( "ba+*",                   GPUINSTRUCTION_TYPE.AggregateBinary);
 		String2GPUInstructionType.put( "tsmm",                   GPUINSTRUCTION_TYPE.MMTSJ);
 		String2GPUInstructionType.put( "r'",                   	 GPUINSTRUCTION_TYPE.Reorg);
+		String2GPUInstructionType.put( "+",                   	 GPUINSTRUCTION_TYPE.ArithmeticBinary);
 	}
 	
 	public static GPUInstruction parseSingleInstruction (String str ) 
@@ -78,6 +79,9 @@ public class GPUInstructionParser  extends InstructionParser
 			
 			case Reorg:
 				return ReorgGPUInstruction.parseInstruction(str);
+				
+			case ArithmeticBinary:
+				return ArithmeticGPUInstruction.parseInstruction(str);
 				
 			default: 
 				throw new DMLRuntimeException("Invalid GPU Instruction Type: " + gputype );

@@ -264,6 +264,21 @@ public class LibMatrixCUDA {
 		
 	}
 
+	public static void cellwiseMatMatAdd(MatrixObject in1, MatrixObject in2, MatrixObject out) {
+		Pointer alpha = pointerTo(1.0);
+		Pointer beta = pointerTo(0.0);
+		
+		int m = (int) in1.getNumRows();
+	    int n = (int) in1.getNumColumns();
+	    int lda = m, ldb = m, ldc = m;
+	    
+		Pointer A = ((JCudaObject)in1.getGPUObject()).jcudaPointer;
+		Pointer B = ((JCudaObject)in2.getGPUObject()).jcudaPointer;
+	    Pointer C = ((JCudaObject)out.getGPUObject()).jcudaPointer;
+	    
+	    JCublas2.cublasDgeam(cublasHandle, CUBLAS_OP_N, CUBLAS_OP_N, m, n, alpha, A, lda, beta, B, ldb, C, ldc);
+	}
+	
 	public static void transpose(MatrixObject in, MatrixObject out) throws DMLRuntimeException {
 		Pointer alpha = pointerTo(1.0);
 		Pointer beta = pointerTo(0.0);
