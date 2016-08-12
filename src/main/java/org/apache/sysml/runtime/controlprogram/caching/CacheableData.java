@@ -790,10 +790,10 @@ public abstract class CacheableData<T extends CacheBlock> extends Data
 		LOG.trace("Exporting " + this.getDebugName() + " to " + fName + " in format " + outputFormat);
 		
 		//TODO remove 
-		if( getGPUObject() != null ) {
+		if( getGPUObject() != null && getGPUObject().isAllocated) {
 			getGPUObject().acquireHostRead();
 		}
-				
+		
 		boolean pWrite = false; // !fName.equals(_hdfsFileName); //persistent write flag
 		if ( fName.equals(_hdfsFileName) ) {
 			setHDFSFileExists(true);

@@ -36,6 +36,7 @@ public class MatrixMatrixArithmeticGPUInstruction extends ArithmeticBinaryGPUIns
 		MatrixObject out = ec.getMatrixOutputForGPUInstruction(_output.getName(), false);
 		
 		LibMatrixCUDA.cellwiseMatMatAdd(in1, in2, out);
+		
 		ec.releaseMatrixInputForGPUInstruction(_input1.getName());
 		ec.releaseMatrixInputForGPUInstruction(_input2.getName());
         ec.releaseMatrixOutputForGPUInstruction(_output.getName());

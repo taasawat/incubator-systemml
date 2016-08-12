@@ -22,6 +22,7 @@ import java.util.HashMap;
 
 import org.apache.sysml.runtime.DMLRuntimeException;
 import org.apache.sysml.runtime.instructions.gpu.AggregateBinaryGPUInstruction;
+import org.apache.sysml.runtime.instructions.gpu.ArithmeticBinaryGPUInstruction;
 import org.apache.sysml.runtime.instructions.gpu.ConvolutionGPUInstruction;
 import org.apache.sysml.runtime.instructions.gpu.GPUInstruction;
 import org.apache.sysml.runtime.instructions.gpu.GPUInstruction.GPUINSTRUCTION_TYPE;
@@ -81,7 +82,7 @@ public class GPUInstructionParser  extends InstructionParser
 				return ReorgGPUInstruction.parseInstruction(str);
 				
 			case ArithmeticBinary:
-				return ArithmeticGPUInstruction.parseInstruction(str);
+				return ArithmeticBinaryGPUInstruction.parseInstruction(str);
 				
 			default: 
 				throw new DMLRuntimeException("Invalid GPU Instruction Type: " + gputype );

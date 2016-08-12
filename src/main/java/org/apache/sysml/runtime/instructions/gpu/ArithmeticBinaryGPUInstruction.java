@@ -2,13 +2,12 @@ package org.apache.sysml.runtime.instructions.gpu;
 
 
 import org.apache.sysml.parser.Expression.DataType;
-import org.apache.sysml.parser.Expression.ValueType;
 import org.apache.sysml.runtime.DMLRuntimeException;
 import org.apache.sysml.runtime.instructions.InstructionUtils;
 import org.apache.sysml.runtime.instructions.cp.CPOperand;
 import org.apache.sysml.runtime.matrix.operators.Operator;
 
-public class ArithmeticBinaryGPUInstruction extends GPUInstruction {
+public abstract class ArithmeticBinaryGPUInstruction extends GPUInstruction {
 
 	protected CPOperand _input1;
 	protected CPOperand _input2;
@@ -23,22 +22,6 @@ public class ArithmeticBinaryGPUInstruction extends GPUInstruction {
 	}
 	
 	public static ArithmeticBinaryGPUInstruction parseInstruction ( String str ) throws DMLRuntimeException {
-		/*
-		String[] parts = InstructionUtils.getInstructionPartsWithValueType(str);
-		InstructionUtils.checkNumFields ( parts, 4 );
-		
-		String opcode = parts[0];
-		CPOperand in1 = new CPOperand(parts[1]);
-		CPOperand in2 = new CPOperand(parts[2]);
-		CPOperand out = new CPOperand(parts[3]);
-		
-		if ( !(opcode.equalsIgnoreCase("+")) ) {
-			throw new DMLRuntimeException("Unknown opcode while parsing a ArithmeticBinaryGPUInstruction: " + str);
-		}
-		else
-			return new ArithmeticBinaryGPUInstruction();
-	}
-	*/
 		String[] parts = InstructionUtils.getInstructionPartsWithValueType(str);
 		InstructionUtils.checkNumFields ( parts, 3 );
 		
@@ -53,7 +36,7 @@ public class ArithmeticBinaryGPUInstruction extends GPUInstruction {
 	 
 		Operator operator = InstructionUtils.parseBinaryOperator(opcode);
 		
-		if(opcode.equalsIgnoreCase("+") && dt1 == DataType.MATRIX && dt2 == DataType.MATRIX && dt1 == DataType.MATRIX)
+		if(opcode.equalsIgnoreCase("+") && dt1 == DataType.MATRIX && dt2 == DataType.MATRIX && dt3 == DataType.MATRIX)
 			return new MatrixMatrixArithmeticGPUInstruction(operator, in1, in2, out, opcode, str);
 		else
 			throw new DMLRuntimeException("Unsupported GPU ArithmeticInstruction. :: " + out.getDataType() + " = " + in1.getDataType() + " " + operator + " " + in1.getDataType() );	
