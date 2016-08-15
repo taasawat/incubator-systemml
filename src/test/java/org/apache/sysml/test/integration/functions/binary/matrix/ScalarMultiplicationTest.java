@@ -91,7 +91,7 @@ public class ScalarMultiplicationTest extends AutomatedTestBase
 		
 		compareResults();
 	}
-	
+	/*
 	@Test
 	public void testIntVar() {
 		int rows = 10;
@@ -247,5 +247,5 @@ public class ScalarMultiplicationTest extends AutomatedTestBase
 		
 		compareResults();
 	}
-	
+	*/
 }

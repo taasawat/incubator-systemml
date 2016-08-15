@@ -65,7 +65,9 @@ import jcuda.runtime.JCuda;
 
 import org.apache.sysml.runtime.DMLRuntimeException;
 import org.apache.sysml.runtime.controlprogram.caching.MatrixObject;
+import org.apache.sysml.runtime.instructions.cp.ScalarObject;
 import org.apache.sysml.runtime.instructions.gpu.context.JCudaObject;
+import org.apache.sysml.runtime.matrix.operators.ScalarOperator;
 
 import static jcuda.jcublas.JCublas2.cublasCreate;
 
@@ -262,9 +264,30 @@ public class LibMatrixCUDA {
 			if(workSpace != null && sizeInBytes != 0)
 				cudaFree(workSpace);
 		}
-		
 	}
-
+	
+	public static enum GPUEnabledElementwiseOp {
+		MULTIPLY,
+		DIVIDE
+	};
+	
+	public static void matScalarElementwiseMultDiv(MatrixObject in, 
+			double constant, MatrixObject out, GPUEnabledElementwiseOp op) {
+		Pointer alpha = pointerTo(constant);
+		if(op == GPUEnabledElementwiseOp.DIVIDE)
+			alpha = pointerTo(1/constant);
+		Pointer beta = pointerTo(0.0);
+		
+		int m = (int) in.getNumRows();
+		int n = (int) in.getNumColumns();
+		int lda = m, ldc = m;
+		int transa = CUBLAS_OP_N;
+		
+		Pointer A = ((JCudaObject)in.getGPUObject()).jcudaPointer;
+	    Pointer C = ((JCudaObject)out.getGPUObject()).jcudaPointer;
+	    
+	    JCublas2.cublasDgeam(cublasHandle, transa, transa, m, n, alpha, A, lda, beta, A, lda, C, ldc);
+	}
 	public static void cellwiseMatMatAddSub(MatrixObject in1, MatrixObject in2, MatrixObject out, boolean isLeftTransposed, boolean isRightTransposed, boolean isAdd) throws DMLRuntimeException {
 		Pointer alpha = pointerTo(1.0);
 		Pointer beta = pointerTo(1.0);
@@ -280,7 +303,7 @@ public class LibMatrixCUDA {
 		}
 		else { // C = A + B, C = A' + B'
 			if(in1.getNumRows() != in2.getNumRows() || in1.getNumColumns() != in2.getNumColumns())
-				throw new DMLRuntimeException("Incorrect dimensions");
+				throw new DMLRuntimeException("Incorrect dimensions"+in1.getNumRows()+","+in1.getNumColumns()+","+in2.getNumRows()+","+in2.getNumColumns() );
 		}
 		
 		int m = (int) in1.getNumRows();
@@ -296,6 +319,7 @@ public class LibMatrixCUDA {
 		Pointer A = ((JCudaObject)in1.getGPUObject()).jcudaPointer;
 		Pointer B = ((JCudaObject)in2.getGPUObject()).jcudaPointer;
 	    Pointer C = ((JCudaObject)out.getGPUObject()).jcudaPointer;
+	    
 	    JCublas2.cublasDgeam(cublasHandle, transa, transb, m, n, alpha, A, lda, beta, B, ldb, C, ldc);
 	}
 	
