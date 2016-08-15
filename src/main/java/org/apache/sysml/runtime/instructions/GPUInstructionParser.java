@@ -43,6 +43,7 @@ public class GPUInstructionParser  extends InstructionParser
 		String2GPUInstructionType.put( "tsmm",                   GPUINSTRUCTION_TYPE.MMTSJ);
 		String2GPUInstructionType.put( "r'",                   	 GPUINSTRUCTION_TYPE.Reorg);
 		String2GPUInstructionType.put( "+",                   	 GPUINSTRUCTION_TYPE.ArithmeticBinary);
+		String2GPUInstructionType.put( "-",                   	 GPUINSTRUCTION_TYPE.ArithmeticBinary);
 	}
 	
 	public static GPUInstruction parseSingleInstruction (String str ) 

@@ -51,6 +51,7 @@ import jcuda.Sizeof;
 import jcuda.jcublas.JCublas;
 import jcuda.jcublas.JCublas2;
 import jcuda.jcublas.cublasHandle;
+import jcuda.jcublas.cublasOperation;
 import static jcuda.jcublas.cublasOperation.CUBLAS_OP_N;
 import static jcuda.jcublas.cublasOperation.CUBLAS_OP_T;
 import jcuda.jcublas.cublasPointerMode;
@@ -264,18 +265,38 @@ public class LibMatrixCUDA {
 		
 	}
 
-	public static void cellwiseMatMatAdd(MatrixObject in1, MatrixObject in2, MatrixObject out) {
+	public static void cellwiseMatMatAddSub(MatrixObject in1, MatrixObject in2, MatrixObject out, boolean isLeftTransposed, boolean isRightTransposed, boolean isAdd) throws DMLRuntimeException {
 		Pointer alpha = pointerTo(1.0);
 		Pointer beta = pointerTo(1.0);
+		if(!isAdd) // C = A - B
+			beta = pointerTo(-1.0);
+		
+		int transa = isLeftTransposed ? CUBLAS_OP_T : CUBLAS_OP_N;
+		int transb = isRightTransposed ? CUBLAS_OP_T : CUBLAS_OP_N;
+		
+		if(isLeftTransposed ^ isRightTransposed) { // C = A' + B, C = A + B'
+			if(in1.getNumRows() != in2.getNumColumns() || in1.getNumColumns() != in2.getNumRows())
+				throw new DMLRuntimeException("Incorrect dimensions");
+		}
+		else { // C = A + B, C = A' + B'
+			if(in1.getNumRows() != in2.getNumRows() || in1.getNumColumns() != in2.getNumColumns())
+				throw new DMLRuntimeException("Incorrect dimensions");
+		}
 		
 		int m = (int) in1.getNumRows();
-	    int n = (int) in1.getNumColumns();
-	    int lda = m, ldb = m, ldc = m;
-	    
+		int n = (int) in1.getNumColumns();
+		if(!isLeftTransposed && isRightTransposed) {
+			m = (int) in1.getNumColumns();
+			n = (int) in1.getNumRows();
+		}
+		int lda = isLeftTransposed ? n : m;
+		int ldb = isRightTransposed ? n : m;
+		int ldc = m;
+		
 		Pointer A = ((JCudaObject)in1.getGPUObject()).jcudaPointer;
 		Pointer B = ((JCudaObject)in2.getGPUObject()).jcudaPointer;
 	    Pointer C = ((JCudaObject)out.getGPUObject()).jcudaPointer;
-	    JCublas2.cublasDgeam(cublasHandle, CUBLAS_OP_N, CUBLAS_OP_N, m, n, alpha, A, lda, beta, B, ldb, C, ldc);
+	    JCublas2.cublasDgeam(cublasHandle, transa, transb, m, n, alpha, A, lda, beta, B, ldb, C, ldc);
 	}
 	
 	public static void transpose(MatrixObject in, MatrixObject out) throws DMLRuntimeException {
