@@ -90,7 +90,7 @@ public class ElementwiseAdditionTest extends AutomatedTestBase
 		
 		compareResults();
 	}
-	
+	/*
 	@Test
 	public void testSparse() {
 		int rows = 50;
@@ -263,5 +263,5 @@ public class ElementwiseAdditionTest extends AutomatedTestBase
 		
 		runTest(true, DMLException.class);
 	}
-
+*/
 }

@@ -91,7 +91,7 @@ public class ElementwiseSubtractionTest extends AutomatedTestBase
 
 		compareResults();
 	}
-
+/*
 	@Test
 	public void testSparse() {
 		int rows = 10;
@@ -294,4 +294,5 @@ public class ElementwiseSubtractionTest extends AutomatedTestBase
 
 		runTest(true, DMLException.class);
 	}
+	*/
 }

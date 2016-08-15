@@ -36,9 +36,19 @@ public abstract class ArithmeticBinaryGPUInstruction extends GPUInstruction {
 	 
 		Operator operator = InstructionUtils.parseBinaryOperator(opcode);
 		
-		if((opcode.equalsIgnoreCase("+") || opcode.equalsIgnoreCase("-")) && dt1 == DataType.MATRIX && dt2 == DataType.MATRIX && dt3 == DataType.MATRIX)
-			return new MatrixMatrixArithmeticGPUInstruction(operator, in1, in2, out, opcode, str);
+		if(dt1 == DataType.MATRIX && dt2 == DataType.MATRIX && dt3 == DataType.MATRIX) {
+			if((opcode.equalsIgnoreCase("+") || opcode.equalsIgnoreCase("-")))
+				return new MatrixMatrixArithmeticGPUInstruction(operator, in1, in2, out, opcode, str);
+			else
+				throw new DMLRuntimeException("Unsupported GPU ArithmeticInstruction. :: " + out.getDataType() + " = " + in1.getDataType() + " " + operator + " " + in1.getDataType() );	
+		}
+		else if( dt3 == DataType.MATRIX && ((dt1 == DataType.SCALAR && dt2 == DataType.MATRIX) || (dt1 == DataType.MATRIX && dt2 == DataType.SCALAR)) ) {
+			if((opcode.equalsIgnoreCase("*") || opcode.equalsIgnoreCase("/")))
+				return new MatrixMatrixArithmeticGPUInstruction(operator, in1, in2, out, opcode, str);
+			else
+				throw new DMLRuntimeException("Unsupported GPU ArithmeticInstruction. :: " + out.getDataType() + " = " + in1.getDataType() + " " + operator + " " + in1.getDataType() );
+		}
 		else
-			throw new DMLRuntimeException("Unsupported GPU ArithmeticInstruction. :: " + out.getDataType() + " = " + in1.getDataType() + " " + operator + " " + in1.getDataType() );	
+			throw new DMLRuntimeException("Unsupported GPU ArithmeticInstruction.");
 	}
 }

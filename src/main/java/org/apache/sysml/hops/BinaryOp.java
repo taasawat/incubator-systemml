@@ -602,7 +602,7 @@ public class BinaryOp extends Hop
 			ExecType et = optFindExecType();
 			if ( et == ExecType.CP ) 
 			{
-				if(DMLScript.USE_ACCELERATOR)
+				if(DMLScript.USE_ACCELERATOR && (op == OpOp2.PLUS || op == OpOp2.MINUS))
 					et = ExecType.GPU;
 				Binary binary = new Binary(getInput().get(0).constructLops(), getInput().get(1).constructLops(), HopsOpOp2LopsB.get(op),
 						getDataType(), getValueType(), et);

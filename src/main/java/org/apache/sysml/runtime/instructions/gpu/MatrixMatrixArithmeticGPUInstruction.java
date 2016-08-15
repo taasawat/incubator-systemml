@@ -31,8 +31,8 @@ public class MatrixMatrixArithmeticGPUInstruction extends ArithmeticBinaryGPUIns
 		MatrixObject in2 = ec.getMatrixInputForGPUInstruction(_input2.getName());
 		
 		//TODO: make hop level changes for this
-		boolean isLeftTransposed = true;
-		boolean isRightTransposed = true;
+		boolean isLeftTransposed = false;
+		boolean isRightTransposed = false;
 		int rlen = isLeftTransposed ? (int) in1.getNumColumns() : (int) in1.getNumRows();
 		int clen = isLeftTransposed ? (int) in1.getNumRows() : (int) in1.getNumColumns();
 		
