@@ -67,8 +67,18 @@ import org.apache.sysml.runtime.DMLRuntimeException;
 import org.apache.sysml.runtime.controlprogram.caching.MatrixObject;
 import org.apache.sysml.runtime.instructions.cp.ScalarObject;
 import org.apache.sysml.runtime.instructions.gpu.context.JCudaObject;
+import org.apache.sysml.runtime.matrix.data.LibMatrixCUDA.GPUEnabledElementwiseOp;
 import org.apache.sysml.runtime.matrix.operators.ScalarOperator;
 
+import static jcuda.driver.JCudaDriver.*;
+import static jcuda.jcublas.JCublas.*;
+import static jcuda.runtime.JCuda.*;
+
+import java.io.*;
+import java.util.*;
+
+import jcuda.*;
+import jcuda.driver.*;
 import static jcuda.jcublas.JCublas2.cublasCreate;
 
 //FIXME move could to respective instructions, this is not a block library
@@ -268,15 +278,29 @@ public class LibMatrixCUDA {
 	
 	public static enum GPUEnabledElementwiseOp {
 		MULTIPLY,
-		DIVIDE
+		DIVIDE,
+		PLUS
 	};
 	
-	public static void matScalarElementwiseMultDiv(MatrixObject in, 
-			double constant, MatrixObject out, GPUEnabledElementwiseOp op) {
+	public static void vectorScalarMult(MatrixObject in, double constant, MatrixObject out, GPUEnabledElementwiseOp op) {
 		Pointer alpha = pointerTo(constant);
 		if(op == GPUEnabledElementwiseOp.DIVIDE)
 			alpha = pointerTo(1/constant);
-		Pointer beta = pointerTo(0.0);
+		
+		int incx = 1, incy = 0;
+		int n = (int) in.getNumRows() == 1 ? (int) in.getNumColumns() : (int) in.getNumRows();
+		
+		Pointer A = ((JCudaObject)in.getGPUObject()).jcudaPointer;
+	    Pointer C = ((JCudaObject)out.getGPUObject()).jcudaPointer;
+	    System.out.println("In Daxpy 1 :: " + n);
+		JCublas2.cublasDaxpy(cublasHandle, n, alpha, A, incx, C, incy);
+		System.out.println("In Daxpy 2");
+	}
+	
+	public static void matScalarElementwiseAddSub(MatrixObject in,
+			double constant, MatrixObject out, GPUEnabledElementwiseOp op) {
+		Pointer alpha = pointerTo(1.0);
+		Pointer beta = pointerTo(constant);
 		
 		int m = (int) in.getNumRows();
 		int n = (int) in.getNumColumns();
@@ -286,8 +310,33 @@ public class LibMatrixCUDA {
 		Pointer A = ((JCudaObject)in.getGPUObject()).jcudaPointer;
 	    Pointer C = ((JCudaObject)out.getGPUObject()).jcudaPointer;
 	    
+	    Pointer B = new Pointer();
+	    long numBytes = out.getNumRows()*out.getNumColumns()*Sizeof.DOUBLE;
+	    cudaMalloc(B, numBytes);
+	    cudaMemset(B, 1, numBytes);
+	    System.out.println("Finally here 1");
+	    JCublas2.cublasDgeam(cublasHandle, transa, transa, m, n, alpha, A, lda, beta, B, lda, C, ldc);
+	    System.out.println("Finally here 2");
+	}
+	public static void matScalarElementwiseMultDiv(MatrixObject in, 
+			double constant, MatrixObject out, GPUEnabledElementwiseOp op) {
+		Pointer alpha = pointerTo(constant);
+		if(op == GPUEnabledElementwiseOp.DIVIDE)
+			alpha = pointerTo(1/constant);
+		Pointer beta = pointerTo(0.0);
+		
+		int m = (int) in.getNumRows();
+		int n = (int) in.getNumColumns();
+		int lda = m; //m;
+		int ldc = m;
+		int transa = CUBLAS_OP_N;
+		
+		Pointer A = ((JCudaObject)in.getGPUObject()).jcudaPointer;
+	    Pointer C = ((JCudaObject)out.getGPUObject()).jcudaPointer;
+	    
 	    JCublas2.cublasDgeam(cublasHandle, transa, transa, m, n, alpha, A, lda, beta, A, lda, C, ldc);
 	}
+	
 	public static void cellwiseMatMatAddSub(MatrixObject in1, MatrixObject in2, MatrixObject out, boolean isLeftTransposed, boolean isRightTransposed, boolean isAdd) throws DMLRuntimeException {
 		Pointer alpha = pointerTo(1.0);
 		Pointer beta = pointerTo(1.0);
@@ -400,8 +449,8 @@ public class LibMatrixCUDA {
 		if(m == -1 || n == -1 || k == -1)
 			throw new DMLRuntimeException("Incorrect dimensions");
 		
-		double alpha = 1;
-		double beta = 0;
+		double alpha = 1.0;
+		double beta = 0.0;
 		
 		int lda = isLeftTransposed ?  k : m;
 		int ldb = isRightTransposed ? n : k;
@@ -417,7 +466,6 @@ public class LibMatrixCUDA {
 		Pointer C = ((JCudaObject)output.getGPUObject()).jcudaPointer;
 		
 		JCublas.cublasDgemm( transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
-		
 	}
 
 	public static void conv2d_backward_data(MatrixObject filter, MatrixObject dout,

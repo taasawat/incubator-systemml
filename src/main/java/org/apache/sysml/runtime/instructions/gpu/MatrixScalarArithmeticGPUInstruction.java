@@ -23,20 +23,17 @@ package org.apache.sysml.runtime.instructions.gpu;
 import org.apache.sysml.parser.Expression.DataType;
 import org.apache.sysml.runtime.DMLRuntimeException;
 import org.apache.sysml.runtime.controlprogram.context.ExecutionContext;
-import org.apache.sysml.runtime.matrix.data.MatrixBlock;
 import org.apache.sysml.runtime.matrix.operators.BinaryOperator;
 import org.apache.sysml.runtime.matrix.operators.Operator;
-import org.apache.sysml.runtime.matrix.operators.ScalarOperator;
-import org.apache.sysml.runtime.DMLRuntimeException;
 import org.apache.sysml.runtime.controlprogram.caching.MatrixObject;
 import org.apache.sysml.runtime.functionobjects.Divide;
 import org.apache.sysml.runtime.functionobjects.Multiply;
 import org.apache.sysml.runtime.functionobjects.Multiply2;
+import org.apache.sysml.runtime.functionobjects.Plus;
 import org.apache.sysml.runtime.instructions.cp.CPOperand;
 import org.apache.sysml.runtime.instructions.cp.ScalarObject;
 import org.apache.sysml.runtime.matrix.data.LibMatrixCUDA;
 import org.apache.sysml.runtime.matrix.data.LibMatrixCUDA.GPUEnabledElementwiseOp;
-//import org.apache.sysml.runtime.matrix.operators.BinaryOperator;
 import org.apache.sysml.utils.Statistics;
 
 public class MatrixScalarArithmeticGPUInstruction extends ArithmeticBinaryGPUInstruction{
@@ -71,6 +68,9 @@ public class MatrixScalarArithmeticGPUInstruction extends ArithmeticBinaryGPUIns
 			else if(((BinaryOperator)_optr).fn instanceof Divide) {
 				op = GPUEnabledElementwiseOp.DIVIDE;
 			}
+			else if(((BinaryOperator)_optr).fn instanceof Plus) {
+				op = GPUEnabledElementwiseOp.PLUS;
+			}
 			else {
 				throw new DMLRuntimeException("The operator is not supported");
 			}
@@ -78,31 +78,18 @@ public class MatrixScalarArithmeticGPUInstruction extends ArithmeticBinaryGPUIns
 		else {
 			throw new DMLRuntimeException("The operator is not supported");
 		}
-		
-		LibMatrixCUDA.matScalarElementwiseMultDiv(in1, constant.getDoubleValue(), out, op);
+	/*
+		if(out.getNumRows() == 1 || out.getNumColumns() == 1)
+			LibMatrixCUDA.vectorScalarMult(in1, constant.getDoubleValue(), out, op);
+		else
+	*/
+		if(op == GPUEnabledElementwiseOp.PLUS)
+			LibMatrixCUDA.matScalarElementwiseAddSub(in1, constant.getDoubleValue(), out, op);
+		else
+			LibMatrixCUDA.matScalarElementwiseMultDiv(in1, constant.getDoubleValue(), out, op);
 		
 		ec.releaseMatrixInputForGPUInstruction(mat.getName());
         ec.releaseMatrixOutputForGPUInstruction(_output.getName());
 	
 	}
 }
-
-
-/*
-	
-		MatrixBlock retBlock = (MatrixBlock) inBlock.scalarOperations(sc_op, new MatrixBlock());
-		
-		ec.releaseMatrixInput(mat.getName());
-		
-		// Ensure right dense/sparse output representation (guarded by released input memory)
-		if( checkGuardedRepresentationChange(inBlock, retBlock) ) {
- 			retBlock.examSparsity();
- 		}
-		
-		ec.setMatrixOutput(output.getName(), retBlock);
-	}
-}
-
-
-
-*/
