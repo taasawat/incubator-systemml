@@ -51,35 +51,19 @@ import jcuda.Sizeof;
 import jcuda.jcublas.JCublas;
 import jcuda.jcublas.JCublas2;
 import jcuda.jcublas.cublasHandle;
-import jcuda.jcublas.cublasOperation;
 import static jcuda.jcublas.cublasOperation.CUBLAS_OP_N;
 import static jcuda.jcublas.cublasOperation.CUBLAS_OP_T;
-import jcuda.jcublas.cublasPointerMode;
-import jcuda.jcublas.cublasStatus;
 import jcuda.jcudnn.cudnnConvolutionDescriptor;
 import jcuda.jcudnn.cudnnFilterDescriptor;
 import jcuda.jcudnn.cudnnHandle;
 import jcuda.jcudnn.cudnnPoolingDescriptor;
 import jcuda.jcudnn.cudnnTensorDescriptor;
-import jcuda.runtime.JCuda;
 
 import org.apache.sysml.runtime.DMLRuntimeException;
 import org.apache.sysml.runtime.controlprogram.caching.MatrixObject;
-import org.apache.sysml.runtime.instructions.cp.ScalarObject;
 import org.apache.sysml.runtime.instructions.gpu.context.JCudaObject;
-import org.apache.sysml.runtime.matrix.data.LibMatrixCUDA.GPUEnabledElementwiseOp;
-import org.apache.sysml.runtime.matrix.operators.ScalarOperator;
 
-import static jcuda.driver.JCudaDriver.*;
-import static jcuda.jcublas.JCublas.*;
 import static jcuda.runtime.JCuda.*;
-
-import java.io.*;
-import java.util.*;
-
-import jcuda.*;
-import jcuda.driver.*;
-import static jcuda.jcublas.JCublas2.cublasCreate;
 
 //FIXME move could to respective instructions, this is not a block library
 public class LibMatrixCUDA {
@@ -292,44 +276,23 @@ public class LibMatrixCUDA {
 		
 		Pointer A = ((JCudaObject)in.getGPUObject()).jcudaPointer;
 	    Pointer C = ((JCudaObject)out.getGPUObject()).jcudaPointer;
-	    System.out.println("In Daxpy 1 :: " + n);
+	    
 		JCublas2.cublasDaxpy(cublasHandle, n, alpha, A, incx, C, incy);
-		System.out.println("In Daxpy 2");
 	}
 	
-	public static void matScalarElementwiseAddSub(MatrixObject in,
-			double constant, MatrixObject out, GPUEnabledElementwiseOp op) {
-		Pointer alpha = pointerTo(1.0);
-		Pointer beta = pointerTo(constant);
-		
-		int m = (int) in.getNumRows();
-		int n = (int) in.getNumColumns();
-		int lda = m, ldc = m;
-		int transa = CUBLAS_OP_N;
-		
-		Pointer A = ((JCudaObject)in.getGPUObject()).jcudaPointer;
-	    Pointer C = ((JCudaObject)out.getGPUObject()).jcudaPointer;
-	    
-	    Pointer B = new Pointer();
-	    long numBytes = out.getNumRows()*out.getNumColumns()*Sizeof.DOUBLE;
-	    cudaMalloc(B, numBytes);
-	    cudaMemset(B, 1, numBytes);
-	    System.out.println("Finally here 1");
-	    JCublas2.cublasDgeam(cublasHandle, transa, transa, m, n, alpha, A, lda, beta, B, lda, C, ldc);
-	    System.out.println("Finally here 2");
-	}
 	public static void matScalarElementwiseMultDiv(MatrixObject in, 
-			double constant, MatrixObject out, GPUEnabledElementwiseOp op) {
+			double constant, MatrixObject out, GPUEnabledElementwiseOp op, boolean isTransposed) {
 		Pointer alpha = pointerTo(constant);
 		if(op == GPUEnabledElementwiseOp.DIVIDE)
 			alpha = pointerTo(1/constant);
 		Pointer beta = pointerTo(0.0);
 		
+		int transa = isTransposed ? CUBLAS_OP_T : CUBLAS_OP_N;
+		
 		int m = (int) in.getNumRows();
 		int n = (int) in.getNumColumns();
-		int lda = m; //m;
+		int lda = isTransposed ? n : m; //m;
 		int ldc = m;
-		int transa = CUBLAS_OP_N;
 		
 		Pointer A = ((JCudaObject)in.getGPUObject()).jcudaPointer;
 	    Pointer C = ((JCudaObject)out.getGPUObject()).jcudaPointer;
@@ -352,7 +315,7 @@ public class LibMatrixCUDA {
 		}
 		else { // C = A + B, C = A' + B'
 			if(in1.getNumRows() != in2.getNumRows() || in1.getNumColumns() != in2.getNumColumns())
-				throw new DMLRuntimeException("Incorrect dimensions"+in1.getNumRows()+","+in1.getNumColumns()+","+in2.getNumRows()+","+in2.getNumColumns() );
+				throw new DMLRuntimeException("Incorrect dimensions");
 		}
 		
 		int m = (int) in1.getNumRows();

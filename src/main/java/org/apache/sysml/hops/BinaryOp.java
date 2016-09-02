@@ -587,7 +587,7 @@ public class BinaryOp extends Hop
 			else //general case
 				ot = HopsOpOp2LopsU.get(op);
 			
-			if(DMLScript.USE_ACCELERATOR && (op == OpOp2.MULT || op == OpOp2.DIV || op == OpOp2.PLUS))
+			if(DMLScript.USE_ACCELERATOR && (op == OpOp2.MULT || op == OpOp2.DIV))
 				et = ExecType.GPU;
 			Unary unary1 = new Unary(getInput().get(0).constructLops(),
 						   getInput().get(1).constructLops(), ot, getDataType(), getValueType(), et);

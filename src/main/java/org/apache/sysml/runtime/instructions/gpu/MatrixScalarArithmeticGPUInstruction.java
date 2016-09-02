@@ -29,7 +29,6 @@ import org.apache.sysml.runtime.controlprogram.caching.MatrixObject;
 import org.apache.sysml.runtime.functionobjects.Divide;
 import org.apache.sysml.runtime.functionobjects.Multiply;
 import org.apache.sysml.runtime.functionobjects.Multiply2;
-import org.apache.sysml.runtime.functionobjects.Plus;
 import org.apache.sysml.runtime.instructions.cp.CPOperand;
 import org.apache.sysml.runtime.instructions.cp.ScalarObject;
 import org.apache.sysml.runtime.matrix.data.LibMatrixCUDA;
@@ -57,7 +56,11 @@ public class MatrixScalarArithmeticGPUInstruction extends ArithmeticBinaryGPUIns
 		MatrixObject in1 = ec.getMatrixInputForGPUInstruction(mat.getName());
 		ScalarObject constant = (ScalarObject) ec.getScalarInput(scalar.getName(), scalar.getValueType(), scalar.isLiteral());
 		
-		ec.setMetaData(_output.getName(), in1.getNumRows(), in1.getNumColumns());
+		boolean isTransposed = false;
+		int rlen = isTransposed ? (int) in1.getNumColumns() : (int) in1.getNumRows();
+		int clen = isTransposed ? (int) in1.getNumRows() : (int) in1.getNumColumns();
+		
+		ec.setMetaData(_output.getName(), rlen, clen);
 		MatrixObject out = ec.getMatrixOutputForGPUInstruction(_output.getName(), false);
 		
 		GPUEnabledElementwiseOp op;
@@ -68,9 +71,6 @@ public class MatrixScalarArithmeticGPUInstruction extends ArithmeticBinaryGPUIns
 			else if(((BinaryOperator)_optr).fn instanceof Divide) {
 				op = GPUEnabledElementwiseOp.DIVIDE;
 			}
-			else if(((BinaryOperator)_optr).fn instanceof Plus) {
-				op = GPUEnabledElementwiseOp.PLUS;
-			}
 			else {
 				throw new DMLRuntimeException("The operator is not supported");
 			}
@@ -78,18 +78,9 @@ public class MatrixScalarArithmeticGPUInstruction extends ArithmeticBinaryGPUIns
 		else {
 			throw new DMLRuntimeException("The operator is not supported");
 		}
-	/*
-		if(out.getNumRows() == 1 || out.getNumColumns() == 1)
-			LibMatrixCUDA.vectorScalarMult(in1, constant.getDoubleValue(), out, op);
-		else
-	*/
-		if(op == GPUEnabledElementwiseOp.PLUS)
-			LibMatrixCUDA.matScalarElementwiseAddSub(in1, constant.getDoubleValue(), out, op);
-		else
-			LibMatrixCUDA.matScalarElementwiseMultDiv(in1, constant.getDoubleValue(), out, op);
+		LibMatrixCUDA.matScalarElementwiseMultDiv(in1, constant.getDoubleValue(), out, op, isTransposed);
 		
 		ec.releaseMatrixInputForGPUInstruction(mat.getName());
         ec.releaseMatrixOutputForGPUInstruction(_output.getName());
-	
 	}
 }
